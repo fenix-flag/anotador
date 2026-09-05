@@ -58,6 +58,8 @@
   .pbtn{padding:12px 0;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-family:var(--fd);font-size:18px}
   .pbtn.on{background:var(--gold);color:#3a2a00;border-color:var(--gold)}
   .pgrid.def .pbtn.on{background:var(--def);color:#160c33;border-color:var(--def)}
+  .pbtn.otro{border-style:dashed;color:var(--muted)}
+  .pbtn.otro.on{background:var(--gold,#f5b942);color:#160c33;border-color:var(--gold,#f5b942);font-weight:800}
   .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
   .toggle{padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);font-weight:800}
   .toggle.on{background:var(--flag);color:#3a0011;border-color:var(--flag)}
@@ -229,7 +231,7 @@ function renderDraft(){
   if(draft.type==="otro"){renderOtroDraft(box,v);return;}
   if(draft.type==="pe"){renderPeDraft(box,v);return;}
   let h="";
-  t.slots.forEach(([key,lbl])=>{h+=`<div class="slot"><label class="fld">${lbl}</label><div class="pgrid" data-slot="${key}">`+ROSTER.map(p=>`<button class="pbtn ${v[key]==p.n?'on':''}" data-num="${p.n}">${p.n}</button>`).join("")+`</div></div>`;});
+  t.slots.forEach(([key,lbl])=>{h+=`<div class="slot"><label class="fld">${lbl}</label><div class="pgrid" data-slot="${key}">`+rosterBtns(v[key])+`</div></div>`;});
   if(t.yards)h+=`<div class="slot"><label class="fld">Yardas</label><div class="step"><button class="mini" data-yd="-1">–</button><input inputmode="numeric" id="yards" value="${v.yards??0}" style="width:80px;font-size:18px"><button class="mini" data-yd="1">+</button></div></div>`;
   const chips=[];
   if(t.td)chips.push(`<button class="toggle g ${v.td?'on':''}" data-flag="td">TD 🏈</button>`);
@@ -240,7 +242,7 @@ function renderDraft(){
   const ready=t.slots[0]&&v[t.slots[0][0]]!=null;
   h+=`<button class="add" id="addBtn" ${ready?'':'disabled'}>${draft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
   box.innerHTML=h;
-  box.querySelectorAll(".pgrid").forEach(g=>g.querySelectorAll(".pbtn").forEach(b=>b.onclick=()=>{const slot=g.dataset.slot,num=+b.dataset.num;v[slot]=(v[slot]==num&&slot==="pePasser")?null:num;renderDraft();}));
+  box.querySelectorAll(".pgrid").forEach(g=>g.querySelectorAll(".pbtn").forEach(b=>b.onclick=()=>{const slot=g.dataset.slot;let num;if(b.hasAttribute("data-otro")){num=askOtro();if(num==null)return;}else{num=+b.dataset.num;}v[slot]=(v[slot]==num&&slot==="pePasser")?null:num;renderDraft();}));
   const y=$("#yards");if(y)y.oninput=()=>{v.yards=y.value===""?0:+y.value;};
   box.querySelectorAll("[data-yd]").forEach(b=>b.onclick=()=>{v.yards=Math.max(0,(+v.yards||0)+(+b.dataset.yd));renderDraft();});
   box.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>{v[b.dataset.flag]=!v[b.dataset.flag];renderDraft();});
@@ -249,7 +251,9 @@ function renderDraft(){
   box.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{v.count=Math.max(0,(v.count??0)+(+b.dataset.c));renderDraft();});
   const add=$("#addBtn");if(add)add.onclick=commitDraft;
 }
-function slotGrid(key,lbl,v){return `<div class="slot"><label class="fld">${lbl}</label><div class="pgrid" data-slot="${key}">`+ROSTER.map(p=>`<button class="pbtn ${v[key]==p.n?'on':''}" data-num="${p.n}">${p.n}</button>`).join("")+`</div></div>`;}
+function askOtro(){let x=prompt("Número de jugador/a no registrado (ej: 99):");if(x==null)return null;x=parseInt(String(x).replace('#','').trim(),10);return isNaN(x)?null:x;}
+function rosterBtns(cur){const inR=ROSTER.some(p=>p.n==cur);const off=(cur!=null&&!inR);return ROSTER.map(p=>`<button class="pbtn ${cur==p.n?'on':''}" data-num="${p.n}">${p.n}</button>`).join("")+`<button class="pbtn otro ${off?'on':''}" data-otro>${off?('#'+cur):'Otro'}</button>`;}
+function slotGrid(key,lbl,v){return `<div class="slot"><label class="fld">${lbl}</label><div class="pgrid" data-slot="${key}">`+rosterBtns(v[key])+`</div></div>`;}
 function renderPeDraft(box,v){
   if(!v.peKind)v.peKind="pase"; if(v.pePoints===undefined)v.pePoints=1;
   let h=`<div class="slot"><label class="fld">Tipo de conversión</label><div class="row"><button class="toggle ${v.peKind==='pase'?'on g':''}" data-pk="pase">Pase</button> <button class="toggle ${v.peKind==='corrida'?'on g':''}" data-pk="corrida">Corrida</button></div></div>`;
@@ -261,7 +265,7 @@ function renderPeDraft(box,v){
   box.innerHTML=h;
   box.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{v.peKind=b.dataset.pk;renderDraft();});
   box.querySelectorAll("[data-pp]").forEach(b=>b.onclick=()=>{v.pePoints=+b.dataset.pp;renderDraft();});
-  box.querySelectorAll(".pgrid").forEach(g=>g.querySelectorAll(".pbtn").forEach(b=>b.onclick=()=>{v[g.dataset.slot]=+b.dataset.num;renderDraft();}));
+  box.querySelectorAll(".pgrid").forEach(g=>g.querySelectorAll(".pbtn").forEach(b=>b.onclick=()=>{let num;if(b.hasAttribute("data-otro")){num=askOtro();if(num==null)return;}else{num=+b.dataset.num;}v[g.dataset.slot]=num;renderDraft();}));
   const add=$("#addBtn");if(add)add.onclick=commitDraft;
 }
 function advanceDown(){const m={"1":"2","2":"3","3":"4","4":"1","PE":"1"};if(ST.down in m){ST.down=m[ST.down];save();renderDown();}}
@@ -269,13 +273,13 @@ function renderOtroDraft(box,v){
   let h=`<div class="slot"><label class="fld">Situación</label><div class="row">
     <button class="toggle ${v.sack?'on':''}" data-o="sack">Sack al QB</button>
     <button class="toggle ${v.intc?'on':''}" data-o="intc">Intercepción</button></div></div>`;
-  h+=`<div class="slot"><label class="fld">Jugador (opcional)</label><div class="pgrid" data-slot="player">`+ROSTER.map(p=>`<button class="pbtn ${v.player==p.n?'on':''}" data-num="${p.n}">${p.n}</button>`).join("")+`</div></div>`;
+  h+=`<div class="slot"><label class="fld">Jugador (opcional)</label><div class="pgrid" data-slot="player">`+rosterBtns(v.player)+`</div></div>`;
   h+=`<div class="slot"><label class="fld">Nota (opcional)</label><input type="text" id="otroNote" value="${(v.note||'').replace(/"/g,'&quot;')}" placeholder="qué pasó..."></div>`;
   const ready=v.sack||v.intc||v.player!=null||(v.note&&v.note.trim());
   h+=`<button class="add" id="addBtn" ${ready?'':'disabled'}>${draft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
   box.innerHTML=h;
   box.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{v[b.dataset.o]=!v[b.dataset.o];renderDraft();});
-  box.querySelectorAll('[data-slot="player"] .pbtn').forEach(b=>b.onclick=()=>{const n=+b.dataset.num;v.player=(v.player==n)?null:n;renderDraft();});
+  box.querySelectorAll('[data-slot="player"] .pbtn').forEach(b=>b.onclick=()=>{let n;if(b.hasAttribute("data-otro")){n=askOtro();if(n==null)return;}else{n=+b.dataset.num;}v.player=(v.player==n)?null:n;renderDraft();});
   const nt=$("#otroNote");if(nt)nt.oninput=()=>{v.note=nt.value;const a=$("#addBtn");if(a)a.disabled=!(v.sack||v.intc||v.player!=null||(v.note&&v.note.trim()));};
   const add=$("#addBtn");if(add)add.onclick=commitDraft;
 }
@@ -301,7 +305,7 @@ function renderDefBuilder(){
   $("#types").innerHTML=EVS.map(([id,l])=>`<button data-ev="${id}" class="${defDraft.ev===id?'on':''}">${l}</button>`).join("");
   $("#types").querySelectorAll("button").forEach(b=>b.onclick=()=>{defDraft.ev=b.dataset.ev;renderDefBuilder();});
   const box=$("#draft");box.style.display="block";
-  let h=`<div class="slot"><label class="fld">Tocá el jugador del evento: <b style="color:var(--def)">${EVLBL[defDraft.ev]}</b></label><div class="pgrid def" id="defGrid">`+ROSTER.map(p=>`<button class="pbtn ${defDraft.events.some(e=>e.n===p.n)?'on':''}" data-num="${p.n}">${p.n}</button>`).join("")+`</div></div>`;
+  let h=`<div class="slot"><label class="fld">Tocá el jugador del evento: <b style="color:var(--def)">${EVLBL[defDraft.ev]}</b></label><div class="pgrid def" id="defGrid">`+ROSTER.map(p=>`<button class="pbtn ${defDraft.events.some(e=>e.n===p.n)?'on':''}" data-num="${p.n}">${p.n}</button>`).join("")+`<button class="pbtn otro" data-otro>Otro</button></div></div>`;
   if(defDraft.events.length)h+=`<div class="evlist">`+defDraft.events.map((e,i)=>`<span class="evchip" data-i="${i}">${EVLBL[e.ev]} ${e.n} ✕</span>`).join("")+`</div>`;
   h+=`<div class="hint">Sumá todos los eventos de la misma jugada (ej: Deflección 8 → Intercepción 13) y después "Agregar jugada".</div>`;
   h+=`<button class="add" id="addBtn" ${defDraft.events.length?'':'disabled'}>${defDraft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
@@ -310,7 +314,7 @@ function renderDefBuilder(){
     <button class="toggle" data-tdr="1">TD · x1 (7)</button>
     <button class="toggle" data-tdr="2">TD · x2 (8)</button></div></div>`;
   box.innerHTML=h;
-  box.querySelectorAll("#defGrid .pbtn").forEach(b=>b.onclick=()=>{defDraft.events.push({ev:defDraft.ev,n:+b.dataset.num});renderDefBuilder();});
+  box.querySelectorAll("#defGrid .pbtn").forEach(b=>b.onclick=()=>{let n;if(b.hasAttribute("data-otro")){n=askOtro();if(n==null)return;}else{n=+b.dataset.num;}defDraft.events.push({ev:defDraft.ev,n:n});renderDefBuilder();});
   box.querySelectorAll(".evchip").forEach(c=>c.onclick=()=>{defDraft.events.splice(+c.dataset.i,1);renderDefBuilder();});
   box.querySelectorAll("[data-tdr]").forEach(b=>b.onclick=()=>{ST.plays.push({id:uid(),side:"def",type:"tdrival",vals:{conv:+b.dataset.tdr},down:ST.down});save();renderList();renderScore();});
   $("#addBtn").onclick=commitDef;
