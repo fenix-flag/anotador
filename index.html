@@ -185,6 +185,14 @@
   .dlgbtns button.prim,dialog button.prim{background:var(--accent);color:var(--on-accent);border:none;border-radius:4px;min-height:46px;font-weight:700}
   .hint{line-height:1.45}
   .hint b{color:var(--ink)}
+  .intdet{margin:10px 0 4px;padding:12px;border:1px solid var(--line);border-left:3px solid var(--def);border-radius:4px;background:var(--bg)}
+  .intdet-t{font-family:var(--fd);font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:.06em;color:var(--def);margin-bottom:8px}
+  .intdet .row{gap:16px}.intdet .slot{margin-bottom:8px}
+  .penline{display:flex;align-items:baseline;justify-content:center;gap:10px;margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
+  .penline span{font-family:var(--fd);font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-size:14px}
+  .penline b{font-family:var(--fm);font-size:20px}
+  .penline small{color:var(--muted);font-size:11px}
+  .downbar button[data-d="PEN"]{font-family:var(--fd);text-transform:uppercase;letter-spacing:.05em}
   .wrap{display:flex;flex-direction:column}
   .wrap>header{order:-1}
   .score .sep{align-self:flex-end;padding-bottom:8px}
@@ -215,6 +223,7 @@
         <div class="rvrow"><button class="mini" id="rvMinus">–</button><div class="p" id="rvPts">0</div><button class="mini" id="rvPlus">+</button></div>
       </div>
     </div>
+    <div class="penline" id="penLine" style="display:none"></div>
     <div class="summary" id="summary"></div>
   </div>
 
@@ -267,6 +276,8 @@ const OFF_TYPES=[
 ];
 const EVS=[["flagb","Flag OK"],["flagm","Flag errado"],["defl","Deflección"],["int","Intercepción"],["pick6","Pick 6"],["sack","Sack"],["safety","Safety"],["falta","Falta"]];
 const EVLBL=Object.fromEntries(EVS);
+const evLbl=e=>(e.ev==="pick6"&&e.p2)?"Pick 2":EVLBL[e.ev];
+const isPen=p=>p&&p.down==="PEN";
 
 const $=s=>document.querySelector(s);
 const uid=()=>Date.now()+"_"+Math.random().toString(36).slice(2,6);
@@ -311,9 +322,9 @@ const offCfg=id=>OFF_TYPES.find(t=>t.id===id);
 
 /* ---------- down ---------- */
 function renderDown(){
-  const opts=[["","—"],["1","1°"],["2","2°"],["3","3°"],["4","4°"],["PE","PE"]];
+  const opts=[["","—"],["1","1°"],["2","2°"],["3","3°"],["4","4°"],["PE","PE"],["PEN","PEN"]];
   $("#downbar").innerHTML=`<span class="lbl">Down</span>`+opts.map(([v,l])=>`<button data-d="${v}" class="${ST.down===v?'on':''}">${l}</button>`).join("");
-  $("#downbar").querySelectorAll("button").forEach(b=>b.onclick=()=>{ST.down=b.dataset.d;save();renderDown();});
+  $("#downbar").querySelectorAll("button").forEach(b=>b.onclick=()=>{ST.down=b.dataset.d;save();renderDown();renderPen();if(side==="def")renderDefBuilder();});
 }
 
 /* ---------- ofensiva: formulario ---------- */
@@ -324,7 +335,7 @@ function startDraft(typeId,edit){
   if(!edit&&t.pepts&&draft.vals.pePoints==null)draft.vals.pePoints=1;
   if(!edit&&t.count&&draft.vals.count==null)draft.vals.count=(typeId==="amague"?1:0);
   if(!edit&&t.falta&&draft.vals.faltaTipo==null)draft.vals.faltaTipo="hecha";
-  if(!edit&&typeId==="pe"){if(!draft.vals.peKind)draft.vals.peKind="pase";if(draft.vals.pePoints==null)draft.vals.pePoints=1;ST.down="PE";save();}
+  if(!edit&&typeId==="pe"){if(!draft.vals.peKind)draft.vals.peKind="pase";if(draft.vals.pePoints==null)draft.vals.pePoints=1;if(ST.down!=="PEN")ST.down="PE";save();}
   renderTypes();$("#draft").style.display="block";renderDraft();renderDown();
 }
 function renderDraft(){
@@ -365,11 +376,12 @@ function slotGrid(key,lbl,v){return `<div class="slot"><label class="fld">${lbl}
 function renderPeDraft(box,v){
   if(!v.peKind)v.peKind="pase"; if(v.pePoints===undefined)v.pePoints=1;
   let h=`<div class="slot"><label class="fld">Tipo de conversión</label><div class="row"><button class="toggle ${v.peKind==='pase'?'on g':''}" data-pk="pase">Pase</button> <button class="toggle ${v.peKind==='corrida'?'on g':''}" data-pk="corrida">Corrida</button></div></div>`;
-  if(v.peKind==='pase'){h+=slotGrid('pasador','Pasó',v)+slotGrid('receptor','Anotó (recibió)',v);}
-  else{h+=slotGrid('corredor','Anotó (corrió)',v);}
+  const fallo=v.pePoints===0;
+  if(v.peKind==='pase'){h+=slotGrid('pasador','Pasó',v)+slotGrid('receptor',fallo?'Receptor (opcional)':'Anotó (recibió)',v);}
+  else{h+=slotGrid('corredor',fallo?'Corrió':'Anotó (corrió)',v);}
   h+=`<div class="slot"><label class="fld">Resultado</label><div class="row"><button class="toggle ${v.pePoints===0?'on':''}" data-pp="0">Falló</button> <button class="toggle ${v.pePoints===1?'on g':''}" data-pp="1">x1</button> <button class="toggle ${v.pePoints===2?'on g':''}" data-pp="2">x2</button></div></div>`;
   h+=`<div class="slot"><label class="fld">Amagues</label><div class="step"><button class="mini" data-c="-1">–</button><b>${v.count??0}</b><button class="mini" data-c="1">+</button></div></div>`;
-  const ready=v.peKind==='corrida'?v.corredor!=null:v.receptor!=null;
+  const ready=v.peKind==='corrida'?v.corredor!=null:(fallo?(v.pasador!=null||v.receptor!=null):v.receptor!=null);
   h+=`<button class="add" id="addBtn" ${ready?'':'disabled'}>${draft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
   box.innerHTML=h;
   box.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{v.peKind=b.dataset.pk;renderDraft();});
@@ -383,7 +395,7 @@ function renderOtroDraft(box,v){
   let h=`<div class="slot"><label class="fld">Situación</label><div class="row">
     <button class="toggle ${v.sack?'on':''}" data-o="sack">Sack al QB</button>
     <button class="toggle ${v.intc?'on':''}" data-o="intc">Intercepción</button></div></div>`;
-  h+=`<div class="slot"><label class="fld">Jugador (opcional)</label><div class="pgrid" data-slot="player">`+rosterBtns(v.player)+`</div></div>`;
+  h+=`<div class="slot"><label class="fld">${v.intc?"QB que lanzó":(v.sack?"QB":"Jugador")} (opcional)</label><div class="pgrid" data-slot="player">`+rosterBtns(v.player)+`</div></div>`;
   h+=`<div class="slot"><label class="fld">Nota (opcional)</label><input type="text" id="otroNote" value="${(v.note||'').replace(/"/g,'&quot;')}" placeholder="qué pasó..."></div>`;
   const ready=v.sack||v.intc||v.player!=null||(v.note&&v.note.trim());
   h+=`<button class="add" id="addBtn" ${ready?'':'disabled'}>${draft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
@@ -396,7 +408,7 @@ function renderOtroDraft(box,v){
 function commitDraft(){
   const t=offCfg(draft.type),v=draft.vals;
   if(draft.type==="otro"){ if(!(v.sack||v.intc||v.player!=null||(v.note&&v.note.trim())))return; }
-  else if(draft.type==="pe"){const ok=v.peKind==="corrida"?v.corredor!=null:v.receptor!=null;if(!ok)return;}
+  else if(draft.type==="pe"){const ok=v.peKind==="corrida"?v.corredor!=null:(v.pePoints===0?(v.pasador!=null||v.receptor!=null):v.receptor!=null);if(!ok)return;}
   else if(t.slots[0]&&v[t.slots[0][0]]==null)return;
   if(draft.type==="pase"||draft.type==="corrida"){if(v.yards==null)v.yards=0;}
   if(draft.type==="pase")lastPasador=v.pasador;
@@ -419,16 +431,30 @@ function renderDefBuilder(){
   let h="";
   if(defDraft.ev==="falta")h+=`<div class="slot"><label class="fld">Tipo de falta</label><div class="row"><button class="toggle ${defDraft.faltaTipo!=="recibida"?"on":""}" data-ft="hecha">Hecha</button> <button class="toggle ${defDraft.faltaTipo==="recibida"?"on":""}" data-ft="recibida">Recibida</button></div></div>`;
   h+=`<div class="slot"><label class="fld">Tocá el jugador del evento: <b style="color:var(--def)">${EVLBL[defDraft.ev]}${defDraft.ev==="falta"?(" "+(defDraft.faltaTipo==="recibida"?"recibida":"hecha")):""}</b></label><div class="pgrid def" id="defGrid">`+ROSTER.map(p=>`<button class="pbtn ${defDraft.events.some(e=>e.n===p.n)?'on':''}" data-num="${p.n}">${p.n}</button>`).join("")+`<button class="pbtn otro" data-otro>Otro</button></div></div>`;
-  if(defDraft.events.length)h+=`<div class="evlist">`+defDraft.events.map((e,i)=>`<span class="evchip" data-i="${i}">${EVLBL[e.ev]}${e.ev==="falta"?(e.tipo==="recibida"?" rec":" hech"):""} ${e.n} ✕</span>`).join("")+`</div>`;
+  if(defDraft.events.length)h+=`<div class="evlist">`+defDraft.events.map((e,i)=>`<span class="evchip" data-i="${i}">${evLbl(e)}${e.ev==="falta"?(e.tipo==="recibida"?" rec":" hech"):""} ${e.n} ✕</span>`).join("")+`</div>`;
+  defDraft.events.forEach((e,i)=>{if(e.ev!=="int"&&e.ev!=="pick6")return;
+    h+=`<div class="intdet"><div class="intdet-t">${evLbl(e)} de #${e.n}</div>`;
+    if(e.ev==="pick6")h+=`<div class="slot"><label class="fld">Retorno</label><div class="row"><button class="toggle ${!e.p2?'on g':''}" data-p2="${i}:0">Pick 6 · TD (+6)</button> <button class="toggle ${e.p2?'on g':''}" data-p2="${i}:1">Pick 2 · en PE (+2)</button></div></div>`;
+    h+=`<div class="row"><div class="slot"><label class="fld">Yardas de retorno</label><div class="step"><button class="mini" data-iyd="${i}:-1">–</button><input inputmode="numeric" class="iyd" data-i="${i}" value="${e.yd??0}" style="width:80px;font-size:18px"><button class="mini" data-iyd="${i}:1">+</button></div></div>
+      <div class="slot"><label class="fld">Amagues</label><div class="step"><button class="mini" data-iam="${i}:-1">–</button><b>${e.am??0}</b><button class="mini" data-iam="${i}:1">+</button></div></div></div></div>`;});
   h+=`<div class="hint">Sumá todos los eventos de la misma jugada (ej: Deflección 8 → Intercepción 13) y después "Agregar jugada".</div>`;
   h+=`<button class="add" id="addBtn" ${defDraft.events.length?'':'disabled'}>${defDraft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
   h+=`<div class="slot" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px"><label class="fld">TD del rival (nos anotaron)</label><div class="row">
     <button class="toggle" data-tdr="0">TD · falló (6)</button>
     <button class="toggle" data-tdr="1">TD · x1 (7)</button>
     <button class="toggle" data-tdr="2">TD · x2 (8)</button></div></div>`;
+  if(ST.down==="PEN")h+=`<div class="slot"><label class="fld">Penal del rival (solo conversión)</label><div class="row">
+    <button class="toggle" data-cvr="0">Falló</button>
+    <button class="toggle" data-cvr="1">x1 (1)</button>
+    <button class="toggle" data-cvr="2">x2 (2)</button></div></div>`;
   box.innerHTML=h;
   box.querySelectorAll("[data-ft]").forEach(b=>b.onclick=()=>{defDraft.faltaTipo=b.dataset.ft;renderDefBuilder();});
-  const mkEv=n=>defDraft.ev==="falta"?{ev:"falta",n,tipo:defDraft.faltaTipo}:{ev:defDraft.ev,n};
+  const mkEv=n=>defDraft.ev==="falta"?{ev:"falta",n,tipo:defDraft.faltaTipo}:(defDraft.ev==="pick6"?{ev:"pick6",n,p2:ST.down==="PEN"||ST.down==="PE"}:{ev:defDraft.ev,n});
+  box.querySelectorAll("[data-p2]").forEach(b=>b.onclick=()=>{const [i,x]=b.dataset.p2.split(":");defDraft.events[+i].p2=x==="1";renderDefBuilder();});
+  box.querySelectorAll("[data-iyd]").forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.iyd.split(":");const e=defDraft.events[+i];e.yd=(+e.yd||0)+(+d);renderDefBuilder();});
+  box.querySelectorAll(".iyd").forEach(inp=>inp.oninput=()=>{const n=parseInt(inp.value.replace(/[^0-9-]/g,""),10);defDraft.events[+inp.dataset.i].yd=isNaN(n)?0:n;});
+  box.querySelectorAll("[data-iam]").forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.iam.split(":");const e=defDraft.events[+i];e.am=Math.max(0,(+e.am||0)+(+d));renderDefBuilder();});
+  box.querySelectorAll("[data-cvr]").forEach(b=>b.onclick=()=>{ST.plays.push({id:uid(),side:"def",type:"convrival",vals:{conv:+b.dataset.cvr},down:ST.down});save();renderList();renderScore();});
   box.querySelectorAll("#defGrid .pbtn").forEach(b=>b.onclick=()=>{if(b.hasAttribute("data-otro")){askOtroDlg(n=>{defDraft.events.push(mkEv(n));renderDefBuilder();});return;}defDraft.events.push(mkEv(+b.dataset.num));renderDefBuilder();});
   box.querySelectorAll(".evchip").forEach(c=>c.onclick=()=>{defDraft.events.splice(+c.dataset.i,1);renderDefBuilder();});
   box.querySelectorAll("[data-tdr]").forEach(b=>b.onclick=()=>{ST.plays.push({id:uid(),side:"def",type:"tdrival",vals:{conv:+b.dataset.tdr},down:ST.down});save();renderList();renderScore();});
@@ -451,8 +477,9 @@ function playText(p){const v=p.vals;switch(p.type){
   case"amague":return `Amague ${P(v.amaguePlayer)} <small>x${v.count||1}</small>`;
   case"pe":{const res=v.pePoints===0?'falló':('x'+v.pePoints);const who=v.peKind==='corrida'?('corr '+(v.corredor??'?')):('pase '+(v.pasador??'?')+'→'+(v.receptor??'?'));return `PE ${who} <small>${res}</small>`;}
   case"falta":return `Falta ${v.faltaTipo==='recibida'?'recibida':'hecha'} ${P(v.faltaPlayer)}`;
-  case"multi":return `<small>${(v.events||[]).map(e=>EVLBL[e.ev]+" "+e.n).join(" · ")}</small>`;
+  case"multi":return `<small>${(v.events||[]).map(e=>evLbl(e)+" "+e.n+((e.ev==="int"||e.ev==="pick6")&&(e.yd||e.am)?` (${e.yd||0}yd${e.am?', '+e.am+' am':''})`:'')).join(" · ")}</small>`;
   case"otro":{const tg=[];if(v.sack)tg.push('Sack');if(v.intc)tg.push('Intercep');const who=v.player!=null?' '+v.player:'';const nn=v.note?' — '+v.note:'';return `Otro${who} <small>${tg.join(', ')}${nn}</small>`;}
+  case"convrival":{const c=v.conv||0;return `Conversión del rival <small>${c===0?'falló':'x'+c+' · '+c+' pts'}</small>`;}
   case"tdrival":{const c=v.conv||0;return `TD del rival <small>${c===0?'falló conv':'conv x'+c} · ${6+c} pts</small>`;}
   default:return p.type;
 }}
@@ -460,16 +487,16 @@ function renderList(){
   const el=$("#list");
   if(!ST.plays.length){el.innerHTML='<div class="empty">Todavía no cargaste jugadas.</div>';return;}
   el.innerHTML=[...ST.plays].reverse().map(p=>{
-    const badge=p.type==="tdrival"?`<span class="badge riv">RIV</span>`:`<span class="badge ${p.side}">${p.side==='off'?'OF':'DEF'}</span>`;
-    const editBtn=p.type==="tdrival"?"":`<button class="x" data-edit="${p.id}">✎</button>`;
-    return `<div class="play">${badge}${p.down?`<span class="dbadge">${p.down==='PE'?'PE':p.down+'°'}</span>`:''}
+    const badge=(p.type==="tdrival"||p.type==="convrival")?`<span class="badge riv">RIV</span>`:`<span class="badge ${p.side}">${p.side==='off'?'OF':'DEF'}</span>`;
+    const editBtn=(p.type==="tdrival"||p.type==="convrival")?"":`<button class="x" data-edit="${p.id}">✎</button>`;
+    return `<div class="play">${badge}${p.down?`<span class="dbadge">${p.down==='PE'?'PE':(p.down==='PEN'?'PEN':p.down+'°')}</span>`:''}
       <span class="txt">${playText(p)}</span>
       ${editBtn}<button class="x" data-del="${p.id}">✕</button></div>`;}).join("");
   el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ST.plays=ST.plays.filter(p=>p.id!==b.dataset.del);save();renderList();renderScore();renderSummary();});
   el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{
     const p=ST.plays.find(x=>x.id===b.dataset.edit);if(!p)return;
     ST.down=p.down||"";renderDown();
-    if(p.side==="def"){setSide("def");defDraft={events:[...(p.vals.events||[])],ev:"flagb",editId:p.id};renderDefBuilder();}
+    if(p.side==="def"){setSide("def");defDraft={events:(p.vals.events||[]).map(e=>({...e})),ev:"flagb",editId:p.id};renderDefBuilder();}
     else{setSide("off");startDraft(p.type,{editId:p.id,side:"off",type:p.type,vals:{...p.vals}});}
     window.scrollTo({top:0,behavior:"smooth"});
   });
@@ -479,15 +506,22 @@ function renderList(){
 function fenixPoints(){let pts=0;ST.plays.forEach(p=>{const v=p.vals;
   if((p.type==="pase"||p.type==="corrida")&&v.td)pts+=6;
   if(p.type==="pe")pts+=(+v.pePoints||0);
-  if(p.type==="multi")(v.events||[]).forEach(e=>{if(e.ev==="pick6")pts+=6;if(e.ev==="safety")pts+=2;});
+  if(p.type==="multi")(v.events||[]).forEach(e=>{if(e.ev==="pick6")pts+=(e.p2?2:6);if(e.ev==="safety")pts+=2;});
 });return pts;}
-function rivalPoints(){let p=+ST.rivalPts||0;ST.plays.forEach(pl=>{if(pl.type==="tdrival")p+=6+(pl.vals.conv||0);});return p;}
+function rivalPoints(){let p=+ST.rivalPts||0;ST.plays.forEach(pl=>{if(pl.type==="tdrival")p+=6+(pl.vals.conv||0);if(pl.type==="convrival")p+=(pl.vals.conv||0);});return p;}
+function penScore(){let f=0,r=0,any=false;ST.plays.forEach(p=>{if(!isPen(p))return;any=true;const v=p.vals;
+  if(p.type==="pe")f+=(+v.pePoints||0);
+  if((p.type==="pase"||p.type==="corrida")&&v.td)f+=6;
+  if(p.type==="multi")(v.events||[]).forEach(e=>{if(e.ev==="pick6")f+=(e.p2?2:6);if(e.ev==="safety")f+=2;});
+  if(p.type==="convrival")r+=(v.conv||0);if(p.type==="tdrival")r+=6+(v.conv||0);});
+  return any?{f,r}:null;}
+function renderPen(){const el=$("#penLine");if(!el)return;const s=penScore();if(!s&&ST.down!=="PEN"){el.style.display="none";return;}const x=s||{f:0,r:0};el.style.display="";el.innerHTML=`<span>Penales</span><b>${x.f} – ${x.r}</b><small>incluidos en el marcador</small>`;}
 function fenixScore(){return (ST.fxManual!=null)?ST.fxManual:fenixPoints();}
-function renderScore(){const el=$("#fxPts");el.textContent=fenixScore();el.style.color=(ST.fxManual!=null&&ST.fxManual!==fenixPoints())?"var(--accent)":"";$("#rvPts").textContent=rivalPoints();}
+function renderScore(){renderPen();const el=$("#fxPts");el.textContent=fenixScore();el.style.color=(ST.fxManual!=null&&ST.fxManual!==fenixPoints())?"var(--accent)":"";$("#rvPts").textContent=rivalPoints();}
 function calcStats(){let td=0,comp=0,inc=0,drops=0,peT=0,peC=0,flags=0,flagsM=0,intc=0,defl=0,sacks=0;
   ST.plays.forEach(p=>{const v=p.vals;
     if(p.type==="pase"){comp++;if(v.td)td++;}
-    if(p.type==="inc")inc++;
+    if(p.type==="inc"||(p.type==="otro"&&p.vals.intc))inc++;
     if(p.type==="drop")drops++;
     if(p.type==="corrida"&&v.td)td++;
     if(p.type==="pe"){peT++;if((v.pePoints===undefined?1:v.pePoints)>0)peC++;}
@@ -505,8 +539,8 @@ function renderSummary(){const s=calcStats();const pc=v=>v==null?"—":v+"%";
     `<div class="sumsec"><span class="sumlbl d">Defensiva</span>`+def.map(([k,v])=>`<span class="schip">${k}<b>${v}</b></span>`).join("")+`</div>`;}
 
 /* ---------- filas para la planilla ---------- */
-const OFF_HDR=["Partido","jugada","centro","snap","pasador","yd de pase","pas inc","intercep","sack","receptor","yd ganadas recep","drop","corredor","yd corrida","amague jg","amagues","td jugador","asistencia td","pt ext","jugador p ext","asist p ext","falta jugador","falta recibida"];
-const DEF_HDR=["Partido","jugada","situacion","flag capturado","flag errado","pase desviado","intercepcion","amagues","pick 6","sacks","safety","faltas realizadas","faltas recibidas"];
+const OFF_HDR=["Partido","jugada","centro","snap","pasador","yd de pase","pas inc","intercep","sack","receptor","yd ganadas recep","drop","corredor","yd corrida","amague jg","amagues","td jugador","asistencia td","pt ext","jugador p ext","asist p ext","falta jugador","falta recibida","penales"];
+const DEF_HDR=["Partido","jugada","situacion","flag capturado","flag errado","pase desviado","intercepcion","amagues","pick 6","sacks","safety","faltas realizadas","faltas recibidas","yd intercep","pick 2","penales"];
 function offDicts(p){const v=p.vals;const o={};OFF_HDR.forEach(k=>o[k]="");
   switch(p.type){
     case"pase":o["pasador"]=v.pasador;o["yd de pase"]=v.yards||0;o["receptor"]=v.receptor;o["yd ganadas recep"]=v.yards||0;if(v.td){o["td jugador"]=v.receptor;o["asistencia td"]=v.pasador;}if(v.count>0){o["amague jg"]=v.receptor;o["amagues"]=v.count;}break;
@@ -516,15 +550,14 @@ function offDicts(p){const v=p.vals;const o={};OFF_HDR.forEach(k=>o[k]="");
     case"amague":o["amague jg"]=v.amaguePlayer;o["amagues"]=v.count||1;break;
     case"pe":{const pp=(v.pePoints===undefined?1:v.pePoints);o["pt ext"]=pp;if(pp>0){if(v.peKind==="corrida"){o["jugador p ext"]=v.corredor;}else{o["jugador p ext"]=v.receptor;if(v.pasador!=null)o["asist p ext"]=v.pasador;}}if(v.count>0){o["amague jg"]=(v.peKind==="corrida"?v.corredor:v.receptor);o["amagues"]=v.count;}break;}
     case"falta":if(v.faltaTipo==="recibida")o["falta recibida"]=v.faltaPlayer;else o["falta jugador"]=v.faltaPlayer;break;
-    case"otro":{if(v.sack&&v.player!=null)o["sack"]=v.player;if(v.intc&&v.player!=null)o["intercep"]=v.player;const has=OFF_HDR.some(k=>k!=="Partido"&&k!=="jugada"&&o[k]!=="");if(!has)return [];break;}
+    case"otro":{if(v.sack&&v.player!=null)o["sack"]=v.player;if(v.intc&&v.player!=null){o["intercep"]=v.player;o["pas inc"]=v.player;}const has=OFF_HDR.some(k=>k!=="Partido"&&k!=="jugada"&&o[k]!=="");if(!has)return [];break;}
   }return [o];}
 function defDicts(p){const mk=()=>{const o={};DEF_HDR.forEach(k=>o[k]="");return o;};let out=[];
   (p.vals.events||[]).forEach(e=>{const o=mk();
     if(e.ev==="flagb")o["flag capturado"]=e.n;
     else if(e.ev==="flagm")o["flag errado"]=e.n;
     else if(e.ev==="defl")o["pase desviado"]=e.n;
-    else if(e.ev==="int")o["intercepcion"]=e.n;
-    else if(e.ev==="pick6"){o["intercepcion"]=e.n;o["pick 6"]=e.n;}
+    else if(e.ev==="int"||e.ev==="pick6"){o["intercepcion"]=e.n;if(e.am>0)o["amagues"]=e.am;o["yd intercep"]=e.yd||0;if(e.ev==="pick6")o[e.p2?"pick 2":"pick 6"]=e.n;}
     else if(e.ev==="sack")o["sacks"]=e.n;
     else if(e.ev==="safety")o["safety"]=e.n;
     else if(e.ev==="falta"){if(e.tipo==="recibida")o["faltas recibidas"]=e.n;else o["faltas realizadas"]=e.n;}
@@ -532,8 +565,9 @@ function defDicts(p){const mk=()=>{const o={};DEF_HDR.forEach(k=>o[k]="");return
   return out;}
 function buildRows(){let off=[],def=[],io=0,id=0;
   ST.plays.forEach(p=>{
-    if(p.side==="off")offDicts(p).forEach(o=>{o["Partido"]=ST.partido;o["jugada"]=++io;off.push(OFF_HDR.map(k=>o[k]));});
-    else defDicts(p).forEach(o=>{o["Partido"]=ST.partido;o["jugada"]=++id;def.push(DEF_HDR.map(k=>o[k]));});
+    const pen=isPen(p)?"si":"";
+    if(p.side==="off")offDicts(p).forEach(o=>{o["penales"]=pen;o["Partido"]=ST.partido;o["jugada"]=++io;off.push(OFF_HDR.map(k=>o[k]));});
+    else defDicts(p).forEach(o=>{o["penales"]=pen;o["Partido"]=ST.partido;o["jugada"]=++id;def.push(DEF_HDR.map(k=>o[k]));});
   });return {off,def};}
 const tsv=rows=>rows.map(r=>r.join("\t")).join("\n");
 const csvOf=(hdr,rows)=>[hdr.join(",")].concat(rows.map(r=>r.map(c=>/[",\n]/.test(String(c))?`"${String(c).replace(/"/g,'""')}"`:c).join(","))).join("\n");
@@ -555,14 +589,25 @@ $("#btnExport").onclick=()=>{
 window.copyTa=id=>{const t=$("#"+id);t.select();try{navigator.clipboard.writeText(t.value);}catch(e){}t.blur();};
 window.dl=(name,hdr,rows)=>{const b=new Blob([csvOf(hdr,rows)],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`${ST.partido}-${name}.csv`;a.click();};
 function rivalNameOf(){const lb=partidoLabel(ST.partido);return (lb&&lb.includes("vs "))?lb.split("vs ").pop().trim():"Rival";}
+/* URL de subida: la del Panel (misma web) si está configurada; si no, la de CONFIG. */
+function uploadUrl(){try{const c=JSON.parse(localStorage.getItem("fenixPanel.cfg")||"{}");if(c.apiUrl&&/\/exec$/.test(c.apiUrl.trim()))return c.apiUrl.trim();}catch(e){}return CONFIG.UPLOAD_URL;}
+function destinoTxt(){return `${gender==="f"?"Femenino":"Masculino"} · ${season||"(sin torneo elegido)"}`;}
 async function doUpload(off,def,fxScore,rvScore){
-  try{await fetch(CONFIG.UPLOAD_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({kind:"plays",gender:gender,sheetId:sheetIdFor(),partido:ST.partido,offRows:off,defRows:def,fenixScore:fxScore,rivalScore:rvScore})});
-    openDlg(`<h3 style="margin:0 0 8px">✓ Enviado</h3><p class="hint">Se subieron las jugadas de "${ST.partido}" y el marcador <b>Fenix ${fxScore} - ${rvScore} ${rivalNameOf()}</b>.</p><div class="dlgbtns"><button class="prim" onclick="closeDlg()">Listo</button></div>`);
-  }catch(e){openDlg(`<h3 style="margin:0 0 8px">Error</h3><p class="hint">No se pudo subir: ${e.message}</p><div class="dlgbtns"><button class="prim" onclick="closeDlg()">Ok</button></div>`);}
+  const url=uploadUrl(), sid=sheetIdFor();
+  openDlg(`<h3 style="margin:0 0 8px">Subiendo…</h3><p class="hint">${destinoTxt()}</p>`);
+  const fail=msg=>openDlg(`<h3 style="margin:0 0 8px">No se subió</h3><p class="hint">${msg}</p><p class="hint">Las jugadas siguen guardadas en este celular. No toques Vaciar.</p><p class="hint" style="word-break:break-all">Destino: ${destinoTxt()}<br>API: ${url}</p><div class="dlgbtns"><button class="prim" onclick="closeDlg()">Ok</button></div>`);
+  let res,txt;
+  try{res=await fetch(url,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({kind:"plays",gender:gender,sheetId:sid,partido:ST.partido,offHdr:OFF_HDR,defHdr:DEF_HDR,offRows:off,defRows:def,fenixScore:fxScore,rivalScore:rvScore})});txt=await res.text();}
+  catch(e){return fail("No hubo respuesta del Apps Script ("+e.message+"). Revisá la señal o que la implementación siga activa.");}
+  let j=null;try{j=JSON.parse(txt);}catch(e){}
+  if(!j)return fail("El Apps Script respondió algo que no es la API (¿URL vieja o permisos de la implementación en \"Cualquier persona\"?).");
+  if(!j.ok)return fail("El Apps Script dio error: <b>"+(j.error||"desconocido")+"</b>");
+  const sc=j.score==="ok"?"Marcador guardado en el Fixture.":("Marcador no guardado: "+(j.score||"—")+".");
+  openDlg(`<h3 style="margin:0 0 8px">✓ Subido</h3><p class="hint"><b>${j.off}</b> filas de ataque y <b>${j.def}</b> de defensa en <b>${destinoTxt()}</b>, partido "${ST.partido}".<br>${sc}<br>Fenix ${fxScore} - ${rvScore} ${rivalNameOf()}</p><div class="dlgbtns"><button class="prim" onclick="closeDlg()">Listo</button></div>`);
 }
 $("#btnUpload").onclick=()=>{
   if(!ST.partido){openDlg(`<h3 style="margin:0 0 8px">Falta el partido</h3><p class="hint">Elegí o escribí el partido primero.</p><div class="dlgbtns"><button class="prim" onclick="closeDlg()">Ok</button></div>`);return;}
-  if(!CONFIG.UPLOAD_URL){openDlg(`<h3 style="margin:0 0 8px">Subir a la planilla</h3><p class="hint">Falta configurar la URL del Apps Script en <b>CONFIG.UPLOAD_URL</b>.</p><div class="dlgbtns"><button class="prim" onclick="closeDlg()">Ok</button></div>`);return;}
+  if(!uploadUrl()){openDlg(`<h3 style="margin:0 0 8px">Subir a la planilla</h3><p class="hint">Falta configurar la URL del Apps Script en <b>CONFIG.UPLOAD_URL</b>.</p><div class="dlgbtns"><button class="prim" onclick="closeDlg()">Ok</button></div>`);return;}
   const {off,def}=buildRows();
   const fxCalc=fenixPoints(), rival=rivalPoints(), manual=ST.fxManual, rn=rivalNameOf();
   const btn=(lbl,fx)=>`<button class="prim" style="display:block;width:100%;margin-bottom:8px" onclick="window._up(${fx})">${lbl}: Fenix ${fx} - ${rival} ${rn}</button>`;
@@ -571,7 +616,7 @@ $("#btnUpload").onclick=()=>{
     openDlg(`<h3 style="margin:0 0 8px">¿Qué marcador guardo?</h3><p class="hint">El marcador a mano no coincide con el calculado de las jugadas. Elegí cuál va al Fixture:</p>${btn("A mano",manual)}${btn("Calculado (stats)",fxCalc)}<div class="dlgbtns"><button onclick="closeDlg()">Cancelar</button></div>`);
   } else {
     const fx=(manual!=null?manual:fxCalc);
-    openDlg(`<h3 style="margin:0 0 8px">Subir a la planilla</h3><p class="hint">${off.length} jugadas de ataque y ${def.length} de defensa.<br>Marcador: <b>Fenix ${fx} - ${rival} ${rn}</b>.<br>Reemplaza lo que ya haya de ese partido.</p><div class="dlgbtns"><button onclick="closeDlg()">Cancelar</button><button class="prim" onclick="window._up(${fx})">Subir</button></div>`);
+    openDlg(`<h3 style="margin:0 0 8px">Subir a la planilla</h3><p class="hint">Destino: <b>${destinoTxt()}</b><br>${off.length} jugadas de ataque y ${def.length} de defensa.<br>Marcador: <b>Fenix ${fx} - ${rival} ${rn}</b>.<br>Reemplaza lo que ya haya de ese partido.</p><div class="dlgbtns"><button onclick="closeDlg()">Cancelar</button><button class="prim" onclick="window._up(${fx})">Subir</button></div>`);
   }
 };
 $("#btnClear").onclick=()=>{
