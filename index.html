@@ -642,7 +642,7 @@ $("#bDef").onclick=()=>setSide("def");
 function parseCSV(t){const R=[];let r=[],f="",q=false;t=(t||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;}else{if(c==='"')q=true;else if(c===","){r.push(f);f="";}else if(c==="\n"){r.push(f);R.push(r);r=[];f="";}else f+=c;}}if(f.length||r.length){r.push(f);R.push(r);}return R.filter(x=>x.some(y=>y.trim()!==""));}
 let FIXGAMES=[];
 async function fetchTab(sheetId,tab){
-  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}&_=${Date.now()}`;
+  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(tab)}&_=${Date.now()}`;
   const txt=await fetch(url).then(r=>r.ok?r.text():""); return parseCSV(txt);
 }
 let INDEX=null, season="";
@@ -704,7 +704,7 @@ async function openPartidoPicker(){
 }
 window.pickPartido=(i)=>{const g=FIXGAMES[i];if(!g)return;if(!g.id){alert("Ese partido no tiene ID en el fixture. Ponele un ID en la columna ID del Fixture, o cargalo a mano.");return;}ST.partido=g.id;save();$("#partido").value=g.id;closeDlg();renderAll();updatePartidoLabel();};
 async function fetchPlantel(sheetId,tab){
-  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(tab)}`;
   const txt=await fetch(url).then(r=>r.ok?r.text():"");
   const rows=parseCSV(txt);if(rows.length<2)return null;
   const head=rows[0].map(h=>h.trim()),ci=head.indexOf("Numero"),cn=head.indexOf("Nombre");
