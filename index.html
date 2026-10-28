@@ -188,6 +188,22 @@
   .intdet{margin:10px 0 4px;padding:12px;border:1px solid var(--line);border-left:3px solid var(--def);border-radius:4px;background:var(--bg)}
   .intdet-t{font-family:var(--fd);font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:.06em;color:var(--def);margin-bottom:8px}
   .intdet .row{gap:16px}.intdet .slot{margin-bottom:8px}
+  .ctr-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 10px}
+  .ctr{border:1px solid var(--line);border-radius:4px;background:var(--bg);padding:10px 8px 8px;min-width:0}
+  .ctr-l{text-align:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px}
+  .ctr-in{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:4px}
+  .ctr-in button{height:44px;border:1px solid var(--line-2);border-radius:4px;background:var(--panel-2);color:var(--muted);font:700 20px var(--fm)}
+  .ctr-in button:active{border-color:var(--accent);color:var(--ink)}
+  .ctr-n{display:block;text-align:center;font:700 32px/1 var(--fm)!important;color:var(--ink);font-variant-numeric:tabular-nums}
+  input.ctr-n{width:100%!important;min-width:0;background:transparent!important;border:0!important;padding:4px 0!important;min-height:0!important;text-align:center}
+  input.ctr-n:focus{outline:none;color:var(--accent)}
+  .tdbtn{width:100%;min-height:54px;margin:0 0 4px;border:1px solid var(--line-2);border-radius:4px;background:var(--panel-2);color:var(--muted);font-family:var(--fd);font-weight:800;font-size:20px;letter-spacing:.12em;display:flex;align-items:center;justify-content:center;gap:10px}
+  .tdbox{width:18px;height:18px;border:2px solid var(--line-2);border-radius:3px;flex:none}
+  .tdbtn.on{background:var(--turf);border-color:var(--turf);color:#062312}
+  .tdbtn.on .tdbox{border-color:#062312;background:#062312;box-shadow:inset 0 0 0 3px var(--turf)}
+  .segi{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:4px;padding:3px;background:var(--panel);margin-bottom:8px}
+  .segi button{border:0;background:transparent;min-height:42px;border-radius:3px;font-family:var(--fd);font-weight:800;font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .segi button.on{background:var(--def);color:#15112B}
   .penline{display:flex;align-items:baseline;justify-content:center;gap:10px;margin-top:10px;padding:8px;border:1px solid var(--line);border-radius:4px;background:var(--bg)}
   .penline span{font-family:var(--fd);font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-size:14px}
   .penline b{font-family:var(--fm);font-size:20px}
@@ -338,6 +354,8 @@ function startDraft(typeId,edit){
   if(!edit&&typeId==="pe"){if(!draft.vals.peKind)draft.vals.peKind="pase";if(draft.vals.pePoints==null)draft.vals.pePoints=1;if(ST.down!=="PEN")ST.down="PE";save();}
   renderTypes();$("#draft").style.display="block";renderDraft();renderDown();
 }
+/* contador: etiqueta arriba, – numero + */
+const ctr=(lbl,mid,minus,plus)=>`<div class="ctr"><div class="ctr-l">${lbl}</div><div class="ctr-in"><button type="button" ${minus} aria-label="Restar">–</button>${mid}<button type="button" ${plus} aria-label="Sumar">+</button></div></div>`;
 function renderDraft(){
   const box=$("#draft");if(!draft){box.style.display="none";return;}
   const t=offCfg(draft.type),v=draft.vals;
@@ -345,18 +363,20 @@ function renderDraft(){
   if(draft.type==="pe"){renderPeDraft(box,v);return;}
   let h="";
   t.slots.forEach(([key,lbl])=>{h+=`<div class="slot"><label class="fld">${lbl}</label><div class="pgrid" data-slot="${key}">`+rosterBtns(v[key])+`</div></div>`;});
-  if(t.yards)h+=`<div class="slot"><label class="fld">Yardas</label><div class="step"><button class="mini" data-yd="-1">–</button><input inputmode="numeric" id="yards" value="${v.yards??0}" style="width:80px;font-size:18px"><button class="mini" data-yd="1">+</button></div></div>`;
+  const ctrs=[];
+  if(t.yards)ctrs.push(ctr("Yardas",`<input inputmode="numeric" id="yards" class="ctr-n" value="${v.yards??0}" aria-label="Yardas">`,'data-yd="-1"','data-yd="1"'));
+  if(t.count)ctrs.push(ctr("Amagues",`<b class="ctr-n">${v.count??0}</b>`,'data-c="-1"','data-c="1"'));
+  if(ctrs.length)h+=`<div class="ctr-row">${ctrs.join("")}</div>`;
+  if(t.td)h+=`<button type="button" class="tdbtn ${v.td?'on':''}" data-flag="td" aria-pressed="${v.td?'true':'false'}"><span class="tdbox"></span>🏈 TOUCHDOWN</button>`;
   const chips=[];
-  if(t.td)chips.push(`<button class="toggle g ${v.td?'on':''}" data-flag="td">TD</button>`);
   if(t.pepts)chips.push(`<div class="slot"><label class="fld">Puntos</label><button class="toggle ${v.pePoints===0?'on':''}" data-pts="0">Falló</button> <button class="toggle ${v.pePoints==1?'on g':''}" data-pts="1">1</button> <button class="toggle ${v.pePoints==2?'on g':''}" data-pts="2">2</button></div>`);
   if(t.falta)chips.push(`<div class="slot"><label class="fld">Tipo</label><button class="toggle ${v.faltaTipo!=='recibida'?'on':''}" data-falta="h">Hecha</button> <button class="toggle ${v.faltaTipo==='recibida'?'on':''}" data-falta="r">Recibida</button></div>`);
-  if(t.count)chips.push(`<div class="slot"><label class="fld">Amagues</label><div class="step"><button class="mini" data-c="-1">–</button><b>${v.count??0}</b><button class="mini" data-c="1">+</button></div></div>`);
   if(chips.length)h+=`<div class="row">${chips.join("")}</div>`;
   const ready=t.slots[0]&&v[t.slots[0][0]]!=null;
   h+=`<button class="add" id="addBtn" ${ready?'':'disabled'}>${draft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
   box.innerHTML=h;
   box.querySelectorAll(".pgrid").forEach(g=>g.querySelectorAll(".pbtn").forEach(b=>b.onclick=()=>{const slot=g.dataset.slot;if(b.hasAttribute("data-otro")){askOtroDlg(num=>{v[slot]=num;renderDraft();});return;}const num=+b.dataset.num;v[slot]=(v[slot]==num&&slot==="pePasser")?null:num;renderDraft();}));
-  const y=$("#yards");if(y)y.oninput=()=>{v.yards=y.value===""?0:+y.value;};
+  const y=$("#yards");if(y){y.oninput=()=>{const n=parseInt(y.value.replace(/\D/g,""),10);v.yards=isNaN(n)?0:n;};y.onfocus=()=>y.select();}
   box.querySelectorAll("[data-yd]").forEach(b=>b.onclick=()=>{v.yards=Math.max(0,(+v.yards||0)+(+b.dataset.yd));renderDraft();});
   box.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>{v[b.dataset.flag]=!v[b.dataset.flag];renderDraft();});
   box.querySelectorAll("[data-pts]").forEach(b=>b.onclick=()=>{v.pePoints=+b.dataset.pts;renderDraft();});
@@ -373,17 +393,28 @@ function askOtroDlg(cb){
 }
 function rosterBtns(cur){const inR=ROSTER.some(p=>p.n==cur);const off=(cur!=null&&!inR);return ROSTER.map(p=>`<button class="pbtn ${cur==p.n?'on':''}" data-num="${p.n}">${p.n}</button>`).join("")+`<button class="pbtn otro ${off?'on':''}" data-otro>${off?('#'+cur):'Otro'}</button>`;}
 function slotGrid(key,lbl,v){return `<div class="slot"><label class="fld">${lbl}</label><div class="pgrid" data-slot="${key}">`+rosterBtns(v[key])+`</div></div>`;}
+const PE_MOTIVOS=[["malo","Pase malo"],["drop","Drop"],["flag","Flag antes de la endzone"],["int","Intercepción"]];
+const PE_MOT_LBL=Object.fromEntries(PE_MOTIVOS);
+const peNeedsRec=v=>v.peKind==="pase"&&v.pePoints===0&&(v.peMotivo==="drop"||v.peMotivo==="flag");
+function peReady(v){
+  if(v.peKind==="corrida")return v.corredor!=null;
+  if(v.pePoints!==0)return v.receptor!=null;
+  if(v.pasador==null)return false;
+  if(!v.peMotivo)return false;
+  return !peNeedsRec(v)||v.receptor!=null;}
 function renderPeDraft(box,v){
   if(!v.peKind)v.peKind="pase"; if(v.pePoints===undefined)v.pePoints=1;
   let h=`<div class="slot"><label class="fld">Tipo de conversión</label><div class="row"><button class="toggle ${v.peKind==='pase'?'on g':''}" data-pk="pase">Pase</button> <button class="toggle ${v.peKind==='corrida'?'on g':''}" data-pk="corrida">Corrida</button></div></div>`;
   const fallo=v.pePoints===0;
-  if(v.peKind==='pase'){h+=slotGrid('pasador','Pasó',v)+slotGrid('receptor',fallo?'Receptor (opcional)':'Anotó (recibió)',v);}
+  if(v.peKind==='pase'){h+=slotGrid('pasador','Pasó',v)+slotGrid('receptor',fallo?(peNeedsRec(v)?'Receptor':'Receptor (opcional)'):'Anotó (recibió)',v);}
   else{h+=slotGrid('corredor',fallo?'Corrió':'Anotó (corrió)',v);}
   h+=`<div class="slot"><label class="fld">Resultado</label><div class="row"><button class="toggle ${v.pePoints===0?'on':''}" data-pp="0">Falló</button> <button class="toggle ${v.pePoints===1?'on g':''}" data-pp="1">x1</button> <button class="toggle ${v.pePoints===2?'on g':''}" data-pp="2">x2</button></div></div>`;
-  h+=`<div class="slot"><label class="fld">Amagues</label><div class="step"><button class="mini" data-c="-1">–</button><b>${v.count??0}</b><button class="mini" data-c="1">+</button></div></div>`;
-  const ready=v.peKind==='corrida'?v.corredor!=null:(fallo?(v.pasador!=null||v.receptor!=null):v.receptor!=null);
+  if(fallo&&v.peKind==='pase')h+=`<div class="slot"><label class="fld">¿Por qué falló?</label><div class="row">${PE_MOTIVOS.map(([k,l])=>`<button class="toggle ${v.peMotivo===k?'on':''}" data-pm="${k}">${l}</button>`).join(' ')}</div></div>`;
+  h+=`<div class="ctr-row">${ctr("Amagues",`<b class="ctr-n">${v.count??0}</b>`,'data-c="-1"','data-c="1"')}</div>`;
+  const ready=peReady(v);
   h+=`<button class="add" id="addBtn" ${ready?'':'disabled'}>${draft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
   box.innerHTML=h;
+  box.querySelectorAll("[data-pm]").forEach(b=>b.onclick=()=>{v.peMotivo=b.dataset.pm;renderDraft();});
   box.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{v.peKind=b.dataset.pk;renderDraft();});
   box.querySelectorAll("[data-pp]").forEach(b=>b.onclick=()=>{v.pePoints=+b.dataset.pp;renderDraft();});
   box.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{v.count=Math.max(0,(v.count||0)+(+b.dataset.c));renderDraft();});
@@ -408,7 +439,7 @@ function renderOtroDraft(box,v){
 function commitDraft(){
   const t=offCfg(draft.type),v=draft.vals;
   if(draft.type==="otro"){ if(!(v.sack||v.intc||v.player!=null||(v.note&&v.note.trim())))return; }
-  else if(draft.type==="pe"){const ok=v.peKind==="corrida"?v.corredor!=null:(v.pePoints===0?(v.pasador!=null||v.receptor!=null):v.receptor!=null);if(!ok)return;}
+  else if(draft.type==="pe"){if(!peReady(v))return;}
   else if(t.slots[0]&&v[t.slots[0][0]]==null)return;
   if(draft.type==="pase"||draft.type==="corrida"){if(v.yards==null)v.yards=0;}
   if(draft.type==="pase")lastPasador=v.pasador;
@@ -434,9 +465,9 @@ function renderDefBuilder(){
   if(defDraft.events.length)h+=`<div class="evlist">`+defDraft.events.map((e,i)=>`<span class="evchip" data-i="${i}">${evLbl(e)}${e.ev==="falta"?(e.tipo==="recibida"?" rec":" hech"):""} ${e.n} ✕</span>`).join("")+`</div>`;
   defDraft.events.forEach((e,i)=>{if(e.ev!=="int"&&e.ev!=="pick6")return;
     h+=`<div class="intdet"><div class="intdet-t">${evLbl(e)} de #${e.n}</div>`;
-    if(e.ev==="pick6")h+=`<div class="slot"><label class="fld">Retorno</label><div class="row"><button class="toggle ${!e.p2?'on g':''}" data-p2="${i}:0">Pick 6 · TD (+6)</button> <button class="toggle ${e.p2?'on g':''}" data-p2="${i}:1">Pick 2 · en PE (+2)</button></div></div>`;
-    h+=`<div class="row"><div class="slot"><label class="fld">Yardas de retorno</label><div class="step"><button class="mini" data-iyd="${i}:-1">–</button><input inputmode="numeric" class="iyd" data-i="${i}" value="${e.yd??0}" style="width:80px;font-size:18px"><button class="mini" data-iyd="${i}:1">+</button></div></div>
-      <div class="slot"><label class="fld">Amagues</label><div class="step"><button class="mini" data-iam="${i}:-1">–</button><b>${e.am??0}</b><button class="mini" data-iam="${i}:1">+</button></div></div></div></div>`;});
+    const k=e.ev==="int"?"int":(e.p2?"p2":"p6");
+    h+=`<div class="segi">${[["int","Intercepción"],["p6","Pick 6"],["p2","Pick 2"]].map(([x,l])=>`<button type="button" class="${k===x?'on':''}" data-ik="${i}:${x}">${l}</button>`).join("")}</div>`;
+    h+=`<div class="ctr-row">${ctr("Yardas retorno",`<input inputmode="numeric" class="ctr-n iyd" data-i="${i}" value="${e.yd??0}" aria-label="Yardas de retorno">`,`data-iyd="${i}:-1"`,`data-iyd="${i}:1"`)}${ctr("Amagues",`<b class="ctr-n">${e.am??0}</b>`,`data-iam="${i}:-1"`,`data-iam="${i}:1"`)}</div></div>`;});
   h+=`<div class="hint">Sumá todos los eventos de la misma jugada (ej: Deflección 8 → Intercepción 13) y después "Agregar jugada".</div>`;
   h+=`<button class="add" id="addBtn" ${defDraft.events.length?'':'disabled'}>${defDraft.editId?'Guardar cambios':'Agregar jugada'}</button>`;
   h+=`<div class="slot" style="margin-top:14px;border-top:1px dashed var(--line);padding-top:12px"><label class="fld">TD del rival (nos anotaron)</label><div class="row">
@@ -451,8 +482,9 @@ function renderDefBuilder(){
   box.querySelectorAll("[data-ft]").forEach(b=>b.onclick=()=>{defDraft.faltaTipo=b.dataset.ft;renderDefBuilder();});
   const mkEv=n=>defDraft.ev==="falta"?{ev:"falta",n,tipo:defDraft.faltaTipo}:(defDraft.ev==="pick6"?{ev:"pick6",n,p2:ST.down==="PEN"||ST.down==="PE"}:{ev:defDraft.ev,n});
   box.querySelectorAll("[data-p2]").forEach(b=>b.onclick=()=>{const [i,x]=b.dataset.p2.split(":");defDraft.events[+i].p2=x==="1";renderDefBuilder();});
-  box.querySelectorAll("[data-iyd]").forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.iyd.split(":");const e=defDraft.events[+i];e.yd=(+e.yd||0)+(+d);renderDefBuilder();});
-  box.querySelectorAll(".iyd").forEach(inp=>inp.oninput=()=>{const n=parseInt(inp.value.replace(/[^0-9-]/g,""),10);defDraft.events[+inp.dataset.i].yd=isNaN(n)?0:n;});
+  box.querySelectorAll("[data-iyd]").forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.iyd.split(":");const e=defDraft.events[+i];e.yd=Math.max(0,(+e.yd||0)+(+d));renderDefBuilder();});
+  box.querySelectorAll(".iyd").forEach(inp=>{inp.oninput=()=>{const n=parseInt(inp.value.replace(/\D/g,""),10);defDraft.events[+inp.dataset.i].yd=isNaN(n)?0:n;};inp.onfocus=()=>inp.select();});
+  box.querySelectorAll("[data-ik]").forEach(b=>b.onclick=()=>{const [i,x]=b.dataset.ik.split(":");const e=defDraft.events[+i];if(x==="int"){e.ev="int";delete e.p2;}else{e.ev="pick6";e.p2=x==="p2";}renderDefBuilder();});
   box.querySelectorAll("[data-iam]").forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.iam.split(":");const e=defDraft.events[+i];e.am=Math.max(0,(+e.am||0)+(+d));renderDefBuilder();});
   box.querySelectorAll("[data-cvr]").forEach(b=>b.onclick=()=>{ST.plays.push({id:uid(),side:"def",type:"convrival",vals:{conv:+b.dataset.cvr},down:ST.down});save();renderList();renderScore();});
   box.querySelectorAll("#defGrid .pbtn").forEach(b=>b.onclick=()=>{if(b.hasAttribute("data-otro")){askOtroDlg(n=>{defDraft.events.push(mkEv(n));renderDefBuilder();});return;}defDraft.events.push(mkEv(+b.dataset.num));renderDefBuilder();});
@@ -475,7 +507,7 @@ function playText(p){const v=p.vals;switch(p.type){
   case"drop":return `Drop ${P(v.receptor)} <small>(pase de ${v.pasador})</small>`;
   case"corrida":return `Corrida ${P(v.corredor)} <small>+${v.yards||0}yd${v.td?' · TD':''}${v.count>0?' · '+v.count+' amag':''}</small>`;
   case"amague":return `Amague ${P(v.amaguePlayer)} <small>x${v.count||1}</small>`;
-  case"pe":{const res=v.pePoints===0?'falló':('x'+v.pePoints);const who=v.peKind==='corrida'?('corr '+(v.corredor??'?')):('pase '+(v.pasador??'?')+'→'+(v.receptor??'?'));return `PE ${who} <small>${res}</small>`;}
+  case"pe":{const res=v.pePoints===0?('falló'+(v.peKind!=='corrida'&&v.peMotivo?' · '+PE_MOT_LBL[v.peMotivo].toLowerCase():'')):('x'+v.pePoints);const who=v.peKind==='corrida'?('corr '+(v.corredor??'?')):('pase '+(v.pasador??'?')+'→'+(v.receptor??'?'));return `PE ${who} <small>${res}</small>`;}
   case"falta":return `Falta ${v.faltaTipo==='recibida'?'recibida':'hecha'} ${P(v.faltaPlayer)}`;
   case"multi":return `<small>${(v.events||[]).map(e=>evLbl(e)+" "+e.n+((e.ev==="int"||e.ev==="pick6")&&(e.yd||e.am)?` (${e.yd||0}yd${e.am?', '+e.am+' am':''})`:'')).join(" · ")}</small>`;
   case"otro":{const tg=[];if(v.sack)tg.push('Sack');if(v.intc)tg.push('Intercep');const who=v.player!=null?' '+v.player:'';const nn=v.note?' — '+v.note:'';return `Otro${who} <small>${tg.join(', ')}${nn}</small>`;}
@@ -539,7 +571,7 @@ function renderSummary(){const s=calcStats();const pc=v=>v==null?"—":v+"%";
     `<div class="sumsec"><span class="sumlbl d">Defensiva</span>`+def.map(([k,v])=>`<span class="schip">${k}<b>${v}</b></span>`).join("")+`</div>`;}
 
 /* ---------- filas para la planilla ---------- */
-const OFF_HDR=["Partido","jugada","centro","snap","pasador","yd de pase","pas inc","intercep","sack","receptor","yd ganadas recep","drop","corredor","yd corrida","amague jg","amagues","td jugador","asistencia td","pt ext","jugador p ext","asist p ext","falta jugador","falta recibida","penales"];
+const OFF_HDR=["Partido","jugada","centro","snap","pasador","yd de pase","pas inc","intercep","sack","receptor","yd ganadas recep","drop","corredor","yd corrida","amague jg","amagues","td jugador","asistencia td","pt ext","jugador p ext","asist p ext","falta jugador","falta recibida","motivo pe","pasador pe fallado","jugador pe fallado","penales"];
 const DEF_HDR=["Partido","jugada","situacion","flag capturado","flag errado","pase desviado","intercepcion","amagues","pick 6","sacks","safety","faltas realizadas","faltas recibidas","yd intercep","pick 2","penales"];
 function offDicts(p){const v=p.vals;const o={};OFF_HDR.forEach(k=>o[k]="");
   switch(p.type){
@@ -548,7 +580,7 @@ function offDicts(p){const v=p.vals;const o={};OFF_HDR.forEach(k=>o[k]="");
     case"drop":o["drop"]=v.receptor;o["pas inc"]=v.pasador;break;
     case"corrida":o["corredor"]=v.corredor;o["yd corrida"]=v.yards||0;if(v.td)o["td jugador"]=v.corredor;if(v.count>0){o["amague jg"]=v.corredor;o["amagues"]=v.count;}break;
     case"amague":o["amague jg"]=v.amaguePlayer;o["amagues"]=v.count||1;break;
-    case"pe":{const pp=(v.pePoints===undefined?1:v.pePoints);o["pt ext"]=pp;if(pp>0){if(v.peKind==="corrida"){o["jugador p ext"]=v.corredor;}else{o["jugador p ext"]=v.receptor;if(v.pasador!=null)o["asist p ext"]=v.pasador;}}if(v.count>0){o["amague jg"]=(v.peKind==="corrida"?v.corredor:v.receptor);o["amagues"]=v.count;}break;}
+    case"pe":{const pp=(v.pePoints===undefined?1:v.pePoints);o["pt ext"]=pp;if(pp===0){if(v.peKind==="corrida"){o["jugador pe fallado"]=v.corredor??"";}else{o["motivo pe"]=v.peMotivo||"";o["pasador pe fallado"]=v.pasador??"";o["jugador pe fallado"]=v.receptor??"";}}if(pp>0){if(v.peKind==="corrida"){o["jugador p ext"]=v.corredor;}else{o["jugador p ext"]=v.receptor;if(v.pasador!=null)o["asist p ext"]=v.pasador;}}if(v.count>0){o["amague jg"]=(v.peKind==="corrida"?v.corredor:v.receptor);o["amagues"]=v.count;}break;}
     case"falta":if(v.faltaTipo==="recibida")o["falta recibida"]=v.faltaPlayer;else o["falta jugador"]=v.faltaPlayer;break;
     case"otro":{if(v.sack&&v.player!=null)o["sack"]=v.player;if(v.intc&&v.player!=null){o["intercep"]=v.player;o["pas inc"]=v.player;}const has=OFF_HDR.some(k=>k!=="Partido"&&k!=="jugada"&&o[k]!=="");if(!has)return [];break;}
   }return [o];}
