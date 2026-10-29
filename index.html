@@ -223,6 +223,11 @@
   .rivpe{margin-top:10px}
   .ctr-in button{margin:0;padding:0;display:flex;align-items:center;justify-content:center;line-height:1;align-self:center;box-sizing:border-box;-webkit-appearance:none;appearance:none}
   .ctr-in .ctr-n{align-self:center;margin:0}
+  /* misma altura fija en todos los contadores (con input o sin input) */
+  .ctr-in{grid-template-rows:44px;height:44px;align-items:stretch!important}
+  .ctr-in button{height:44px!important;align-self:stretch}
+  .ctr-in .ctr-n{height:44px!important;line-height:44px!important;padding:0!important;min-height:0!important;box-sizing:border-box;display:block}
+  .ctr-l{height:14px;line-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
