@@ -197,7 +197,8 @@ const nkey=s=>String(s==null?"":s).normalize("NFD").replace(/[̀-ͯ]/g,"").trim(
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* ---------------- estado ---------------- */
-let gender=LS.get("fenixGender","m"); if(gender!=="f")gender="m";
+const RAW={get(k,d){try{let v=localStorage.getItem(k);if(v==null)return d;if(/^".*"$/.test(v))v=JSON.parse(v);return v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}}};
+let gender=RAW.get("fenixGender","m"); if(gender!=="f")gender="m";
 let INDEX=null, season="", FIXGAMES=[], LOGOS={}, ROSTER=[], QBS=[];
 let MIO=[], PASAN=[];
 const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,showAll:false,lastPas:null,lastRec:null,lastCor:null};
@@ -297,7 +298,7 @@ function apply(g,j){
  const safety=!an&&!pe&&(j.tipo==="corr"||j.tipo==="sack"||(j.tipo==="pase"&&j.res==="C"))&&e!=null&&e<0;
  const cambia=()=>{g.spot=5;g.down=1;g.side=o?"d":"o";txt+=" · cambia la posesión";};
  if(j.tipo==="falta"||an){g.spot=faltaSpot(j,g);const fd=j.fq==="A"?"rep":j.fd;if(fd==="auto")g.down=1;else if(fd==="pierde"&&g.down!==null)g.down=Math.min(4,g.down+1);tag="FALTA";tc="#FACC15";}
- else if(safety){g.sc[o?"r":"f"]+=2;tag="SAFETY";tc="var(--err)";if(!o&&def[0])def[0].safety=j.def||"";cambia();}
+ else if(safety){g.sc[o?"r":"f"]+=2;tag="SAFETY";tc="var(--err)";if(!o&&def[0])def[0].safety=j.def||"si";cambia();}
  else if(pk&&pe){g.sc[o?"r":"f"]+=2;tag="PICK 2";tc="var(--int)";g.pe=null;cambia();}
  else if(pk){g.sc[o?"r":"f"]+=6;tag="PICK 6";tc="var(--int)";g.side=o?"d":"o";g.pe="?";g.down=1;}
  else if(pe){if(td){g.sc[o?"f":"r"]+=g.pe;tag="+"+g.pe;tc="var(--ok)";}else{tag="PE ✕";tc="var(--err)";}g.pe=null;cambia();}
@@ -574,12 +575,12 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="export"){const {off,def}=buildRows();dl("Off",OFF_HDR,off);setTimeout(()=>dl("Def",DEF_HDR,def),300);UI.status=`⤓ Se descargaron ${esc(UI.match.id)}-Off.csv y ${esc(UI.match.id)}-Def.csv.`;UI.statusKind="";}
  if(a==="finish"){finish();return;}
  if(a==="matchopen")UI.matchOpen=!UI.matchOpen;
- if(a==="gen"&&v!==gender){gender=v;LS.set("fenixGender",gender);UI.match=null;boot();return;}
+ if(a==="gen"&&v!==gender){gender=v;RAW.set("fenixGender",gender);UI.match=null;boot();return;}
  if(a==="mpick"){const g=FIXGAMES.find(x=>x.id===v);if(!g)return;persist();loadMatch({id:g.id,fecha:g.fecha,rival:g.rival,uploaded:g.hasData});UI.matchOpen=false;}
  if(a==="mmanual"){const id=($("#mId").value||"").trim(),rv=($("#mRiv").value||"").trim()||"Rival";if(!id){$("#mId").focus();return;}persist();loadMatch({id,fecha:"",rival:rv});UI.matchOpen=false;}
  if(a==="save"){savePlay();return;}
  draw();};
-async function selectSeason(s){season=s;LS.set("fenixTourn_"+gender,season);UI.match=null;await loadSeason();}
+async function selectSeason(s){season=s;RAW.set("fenixTourn_"+gender,season);UI.match=null;await loadSeason();}
 async function loadSeason(){
  FIXGAMES=LS.get(`fenixFix3_${gender}_${season}`,[]);LOGOS=LS.get(`fenixLogos3_${gender}_${season}`,{});ROSTER=LS.get(`fenixRoster3_${gender}_${season}`,[]);setRoster();
  const cur=LS.get("fenixAnot3_cur_"+gender,null);if(!UI.match&&cur&&cur.season===season&&cur.match)loadMatch(cur.match);
@@ -588,7 +589,7 @@ async function loadSeason(){
  if(!UI.match){const cur2=LS.get("fenixAnot3_cur_"+gender,null);if(cur2&&cur2.season===season&&cur2.match)loadMatch(cur2.match);}
  J.pas=J.pas||UI.lastPas||QBS[0]||null;draw();}
 async function boot(){
- draw();await loadIndex();const ss=seasonsForGender();const saved=LS.get("fenixTourn_"+gender,"");
+ draw();await loadIndex();const ss=seasonsForGender();const saved=RAW.get("fenixTourn_"+gender,"");
  season=ss.includes(saved)?saved:(ss[0]||"");await loadSeason();}
 window.addEventListener("pagehide",persist);
 boot();
