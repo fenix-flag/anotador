@@ -27,7 +27,7 @@ h1{font-family:var(--fd);font-weight:800;text-transform:uppercase;font-size:30px
 .dnext{min-height:40px;padding:0 10px;border-radius:4px;border:1px solid var(--line-2);background:none;color:var(--ink);font:800 13px var(--fd);letter-spacing:.05em;text-transform:uppercase;cursor:pointer}.dnext:disabled{opacity:.35;cursor:default}
 .clkedit{margin-top:8px;padding:10px;border:1px solid var(--line-2);border-radius:6px;background:var(--bg)}.tbig{font:700 22px var(--fm);flex:1;text-align:center}
 .mbar{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:8px;padding:9px 10px;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;color:var(--ink);cursor:pointer;font:600 14px var(--fb);text-align:left}
-.mbar b{flex:1;font-weight:700}.mid{font:600 11px var(--fm);color:var(--muted)}
+.mbar b{flex:1;font-weight:700}.mphd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font:800 14px var(--fd);letter-spacing:.08em;text-transform:uppercase}.mid{font:600 11px var(--fm);color:var(--muted)}
 .mpanel{margin:-2px 0 8px;padding:10px;border:1px solid var(--accent);border-radius:6px;background:var(--bg)}
 .msel{padding:10px 12px;border:1px solid var(--line-2);border-radius:4px;font:600 14px var(--fb);display:flex;justify-content:space-between;margin-bottom:8px}
 .mlist{display:flex;flex-direction:column;gap:5px}.mitem{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);font:600 13px var(--fb);cursor:pointer;text-align:left}
@@ -106,7 +106,7 @@ h1{font-family:var(--fd);font-weight:800;text-transform:uppercase;font-size:30px
 .mv{margin-left:auto;background:none;border:1px solid var(--line-2);color:var(--muted);border-radius:4px;padding:7px 9px;font:600 12px var(--fb);cursor:pointer}
 .mv.on{border-color:var(--accent);color:var(--ink)}
 /* cancha */
-.fieldwrap{position:relative;background:#132a19;border-radius:6px}
+.fieldwrap{position:relative;background:#132a19;border-radius:6px}.fieldwrap.pan{touch-action:none;cursor:grab}.ctr{position:absolute;right:8px;bottom:8px;padding:7px 12px;border-radius:999px;border:1px solid var(--line-2);background:rgba(14,15,18,.9);color:var(--ink);font:700 13px var(--fb);cursor:pointer}
 .vista{display:flex;gap:4px;margin:0 0 6px}.vista span{flex:1;text-align:center;padding:6px 0;border:1px solid var(--line-2);border-radius:4px;font:600 12px var(--fb);color:var(--muted);cursor:pointer}.vista span.on{border-color:var(--accent);color:var(--ink)}
 svg.field{display:block;border-radius:6px;touch-action:manipulation;cursor:crosshair}
 .yn{font:700 10px var(--fm);fill:rgba(255,255,255,.35)}
@@ -206,7 +206,7 @@ let INDEX=null, season="", FIXGAMES=[], LOGOS={}, ROSTER=[], QBS=[];
 let MIO=[], PASAN=[], LOADING=true, pendingDraw=false;
 function safeDraw(){const ae=document.activeElement;if(ae&&(ae.id==='tSel'||ae.id==='mId'||ae.id==='mRiv'||ae.classList.contains('tin')||ae.classList.contains('ydin'))){pendingDraw=true;return;}pendingDraw=false;draw();}
 document.addEventListener('focusout',()=>{if(pendingDraw)setTimeout(safeDraw,50);});
-const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,showAll:false,lastPas:null,lastRec:null,lastCor:null};
+const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,showAll:false,lastPas:null,lastRec:null,lastCor:null};
 let FREQ={};
 const G0=()=>({side:"o",spot:5,down:1,pe:null,sc:{f:0,r:0},n:0});
 const J0=()=>({yd:null,tipo:null,pas:UI.lastPas||(QBS[0]||null),cor:UI.lastCor||null,rec:UI.lastRec||null,res:null,pt:null,fin:null,def:null,fe:[],am:0,ret:null,pick:false,pf:false,facc:null,fq:null,fj:null,ft:null,fy:null,fd:null,fsp:null,tt:null});
@@ -219,8 +219,19 @@ const addAdj=o=>{UI.adj=Object.assign(UI.adj||{},o);persist();};
 const rivalName=()=>UI.match?UI.match.rival:"Rival";
 
 /* ---------------- geometría ---------------- */
-function W0(){return UI.vista==="completa"?-10:Math.max(-10,Math.min(28,G.spot-8));}
-function WINf(){return UI.vista==="completa"?70:UI.vista==="zoom"?32:Math.max(32,60-W0());}
+function W0b(){return UI.vista==="completa"?-10:Math.max(-10,Math.min(28,G.spot-8));}
+function WINf(){return UI.vista==="completa"?70:UI.vista==="zoom"?32:Math.max(32,60-W0b());}
+function W0(){const b=W0b();if(!UI.pan||UI.vista==="completa")return b;return Math.max(-10,Math.min(60-WINf(),b+UI.pan));}
+const canPan=()=>UI.vista!=="completa"&&WINf()<70;
+function clampPan(){UI.pan=canPan()?W0()-W0b():0;}
+function fieldInner(){return field()+(UI.pan?`<button class="ctr" data-a="center">⌖ Centrar</button>`:"");}
+function wireField(){const fw=document.querySelector(".fieldwrap");if(!fw)return;let st=null;fw.classList.toggle("pan",canPan());
+ fw.onpointerdown=e=>{if(e.target.closest("[data-a]"))return;st={x:e.clientX,y:e.clientY,p:UI.pan||0,drag:false,id:e.pointerId};};
+ fw.onpointermove=e=>{if(!st||!canPan())return;const dx=e.clientX-st.x,dy=e.clientY-st.y;if(!st.drag&&Math.hypot(dx,dy)<8)return;
+  if(!st.drag){st.drag=true;try{fw.setPointerCapture(st.id);}catch(_){}}
+  const r=document.getElementById("fld").getBoundingClientRect(),win=WINf();UI.pan=st.p+(UI.ori==="h"?-dx/r.width*win:dy/r.height*win);clampPan();fw.innerHTML=fieldInner();};
+ fw.onpointerup=e=>{if(!st)return;const d=st.drag;st=null;if(d){draw();return;}tap(e);};
+ fw.onpointercancel=()=>{st=null;};}
 function P(x,yd){return UI.ori==="h"?[(yd-W0())*10,x*10]:[x*10,(W0()+WINf()-yd)*10];}
 function DIM(){return UI.ori==="h"?[WINf()*10,250]:[250,WINf()*10];}
 function band(a,b,fill){const[p1,p2]=[P(0,b),P(25,a)];return `<rect x="${Math.min(p1[0],p2[0])}" y="${Math.min(p1[1],p2[1])}" width="${Math.abs(p2[0]-p1[0])}" height="${Math.abs(p2[1]-p1[1])}" fill="${fill}"/>`;}
@@ -331,7 +342,7 @@ function savePlay(){
  else{["pas","rec","cor","def","fj"].forEach(k=>{if(J[k]){FREQ[k]=FREQ[k]||{};FREQ[k][J[k]]=(FREQ[k][J[k]]||0)+1;}});
   const wasO=G.side==="o";push(J,UI.adj);UI.adj=null;
   if(wasO){if(J.tipo==="pase"||J.tipo==="sack"){UI.lastPas=J.pas;if(J.rec)UI.lastRec=J.rec;}if(J.tipo==="corr"&&J.cor)UI.lastCor=J.cor;}}
- UI.status="";J=J0();persist();draw();}
+ UI.status="";J=J0();UI.pan=0;persist();draw();}
 function delPlay(i){const d=PLAYS[i],rest=PLAYS.slice(i+1);PLAYS=PLAYS.slice(0,i);G=clone(PLAYS[i-1]?PLAYS[i-1].post:G0());
  if(rest.length)rest[0].adj=Object.assign({},d.adj||{},rest[0].adj||{});else UI.adj=Object.assign({},d.adj||{},UI.adj||{});
  rest.forEach(p=>{applyAdj(G,p.adj);push(p.inp,p.adj);});if(UI.adj&&Object.keys(UI.adj).length)applyAdj(G,UI.adj);persist();draw();}
@@ -411,6 +422,7 @@ function ask(){if(!UI.match)return "Elegí el <b>partido</b> arriba";if(G.pe==="
  if(n==="fin"&&J.tipo==="pase")return "Listo para guardar · si <b>avanzó</b>, tocá dónde le sacaron el flag";
  if(n==="ret")return "Opcional: tocá dónde terminó la <b>devolución</b>";
  if(n==="fin")return J.tipo==="sack"?"Tocá dónde quedó el <b>QB</b>":"Tocá dónde le sacaron el <b>flag</b> (o la zona de TD)";
+ if(J.tipo&&(J.pt||J.fin||J.fsp))return "Listo · tocá de nuevo para volver a marcar";
  return "";}
 const PICKS={};
 function NUMS(lbl,key,list,d){PICKS[key]={lbl,list,d};const cur=list.find(x=>x[0]===J[key]);
@@ -479,15 +491,14 @@ function sheet(){
 function peSheet(){return `<div class="lab">Punto extra</div><div class="row"><button class="btn" data-a="pe" data-v="1">x1 · 5 yd</button><button class="btn" data-a="pe" data-v="2">x2 · 10 yd</button></div><div class="row"><button class="btn ghost" data-a="peoff">Sin punto extra</button></div>`;}
 function matchPanel(){const seasons=seasonsForGender();
  const list=FIXGAMES.map(g=>{const pend=pendingCount(g.id),up=uploadedFlag(g.id)||g.hasData;return `<button class="mitem ${UI.match&&UI.match.id===g.id?"on":""}" data-a="mpick" data-v="${esc(g.id)}" ${g.id?"":"disabled"}><span class="mid">${esc(g.id||"sin ID")}</span><span>${esc(g.fecha?g.fecha+" · ":"")}vs ${esc(g.rival)}</span>${pend&&!uploadedFlag(g.id)?`<span class="pend">${pend} sin subir</span>`:up?'<span class="ok">✓ subido</span>':""}</button>`;}).join("");
- return `<div class="mpanel"><div class="row" style="margin:0 0 8px">${[["m","Masculino"],["f","Femenino"]].map(([g,l])=>`<button class="dsel ${gender===g?"on":""}" data-a="gen" data-v="${g}" style="font-size:14px;letter-spacing:.06em;text-transform:uppercase">${l}</button>`).join("")}</div>
+ return `<div class="mpanel" id="mpanel"><div class="mphd"><span>Elegir partido</span>${UI.match?'<button class="fx" data-a="matchclose">Cerrar</button>':""}</div><div class="row" style="margin:0 0 8px">${[["m","Masculino"],["f","Femenino"]].map(([g,l])=>`<button class="dsel ${gender===g?"on":""}" data-a="gen" data-v="${g}" style="font-size:14px;letter-spacing:.06em;text-transform:uppercase">${l}</button>`).join("")}</div>
  ${!seasons.length&&LOADING?'<p class="empty">Cargando torneos…</p>':''}${seasons.length?`<select class="msel" id="tSel">${seasons.map(s=>`<option ${s===season?"selected":""}>${esc(s)}</option>`).join("")}</select>`:""}
  <div class="mlist">${list||(LOADING?'<p class="empty">Cargando partidos del fixture…</p>':'<p class="empty">No pude leer el fixture (¿sin señal o vacío?). Cargá el partido a mano abajo.</p>')}</div>
  <div class="lab">Otro partido</div><div class="row"><input class="tin2" id="mId" placeholder="ID (ej: m26-12)"><input class="tin2" id="mRiv" placeholder="Rival"><button class="btn" data-a="mmanual" style="flex:none;padding:0 14px">Usar</button></div></div>`;}
 function draw(){
  const a=ask();const m=UI.match;
  document.getElementById("app").innerHTML=`
- <div class="hdr">${LOGO?`<img src="${LOGO}" alt="">`:""}<span><b>FENIX</b> Anotador</span><span class="gtag">${gender==="f"?"Femenino":"Masculino"}${season?" · "+esc(season):""}</span></div>
- <button class="mbar" data-a="matchopen"><span class="k">Partido</span><b>${m?esc((m.fecha?m.fecha+" · ":"")+"vs "+m.rival):"Elegir partido"}</b><span class="mid">${m?esc(m.id):""}</span><span style="color:var(--muted)">${UI.matchOpen?"▴":"▾"}</span></button>
+ <div class="hdr">${LOGO?`<img src="${LOGO}" alt="">`:""}<span><b>FENIX</b> Anotador</span><span class="gtag">${gender==="f"?"Femenino":"Masculino"}${season?" · "+esc(season):""}${m?" · "+esc(m.id):""}</span></div>
  ${UI.matchOpen||!m?matchPanel():""}
  ${scoreHTML()}
  ${UI.clkEdit?`<div class="clkedit"><div class="row" style="margin:0">${["1T","2T","Extra"].map(x=>`<button class="dsel ${UI.per===x?"on":""}" data-a="per" data-v="${x}">${x}</button>`).join("")}</div>
@@ -501,15 +512,15 @@ function draw(){
   ${UI.vmenu?`<div class="vmenu"><div class="dk">Orientación</div><div class="vseg">${[["v","Vertical"],["h","Horizontal"]].map(([k,l])=>`<button class="${UI.ori===k?"on":""}" data-a="ori" data-v="${k}">${l}</button>`).join("")}</div>
    <div class="dk" style="margin-top:10px">Zoom</div><div class="vseg">${[["zoom","Ancho pantalla"],["adelante","Dinámica"],["completa","Cancha completa"]].map(([k,l])=>`<button class="${UI.vista===k?"on":""}" data-a="vista" data-v="${k}">${l}</button>`).join("")}</div></div>`:""}</div>
   <button class="mv ${UI.mover?"on":""}" data-a="mover">Mover pelota</button></div>
- <div class="lay"><div><div class="ask">${a||""}</div><div class="fieldwrap">${field()}</div></div>
+ <div class="lay"><div><div class="ask">${a||""}</div><div class="fieldwrap">${fieldInner()}</div></div>
  <div class="sheet">${!m?'<p class="empty">Elegí un partido para empezar.</p>':G.pe==="?"?peSheet():sheet()}</div></div>
  <div class="plist" id="log"></div>
  ${UI.confirmClear?`<div class="confirm">¿Borrar las ${PLAYS.length} jugadas de este partido? <button class="btn no on" data-a="clearyes">Sí, vaciar</button><button class="btn ghost" data-a="clearask">No</button></div>`:""}
  ${UI.status?`<div class="status ${UI.statusKind}">${UI.status}</div>`:""}
- <div class="actions"><div class="tbar">${[["pase","Pase"],["corr","Corrida"],["sack","Sack"],["falta","Falta"]].map(([k,l])=>`<button class="btn${k==="falta"?" fl":""} ${J.tipo===k?"on":""}" data-a="tipo" data-v="${k}" ${m&&G.pe!=="?"?"":"disabled"}>${l}</button>`).join("")}</div><div class="abtns"><div class="pmw"><button class="btn" data-a="pmenu">Partido ${UI.pmenu?"▾":"▴"}</button>${UI.pmenu?`<div class="pmenu"><button data-a="clearask" ${PLAYS.length?"":"disabled"}>Limpiar / vaciar</button><button data-a="export" ${PLAYS.length?"":"disabled"}>Exportar CSV</button><button data-a="finish" class="fin" ${PLAYS.length&&UI.edit===null?"":"disabled"}>Finalizar partido</button></div>`:""}</div><button class="btn ghost" data-a="${UI.edit!==null?"canceledit":"cancel"}" ${J.tipo||UI.edit!==null?"":"disabled"}>Cancelar</button><button class="btn pri" data-a="save" ${m&&J.tipo&&G.pe!=="?"&&listo()?"":"disabled"}>${UI.edit!==null?"Guardar cambios":"Guardar"}</button></div></div>`;
+ <div class="actions"><div class="tbar">${[["pase","Pase"],["corr","Corrida"],["sack","Sack"],["falta","Falta"]].map(([k,l])=>`<button class="btn${k==="falta"?" fl":""} ${J.tipo===k?"on":""}" data-a="tipo" data-v="${k}" ${m&&G.pe!=="?"?"":"disabled"}>${l}</button>`).join("")}</div><div class="abtns"><div class="pmw"><button class="btn" data-a="pmenu">Partido ${UI.pmenu?"▾":"▴"}</button>${UI.pmenu?`<div class="pmenu"><button data-a="matchpick">Elegir partido</button><button data-a="clearask" ${PLAYS.length?"":"disabled"}>Limpiar / vaciar</button><button data-a="export" ${PLAYS.length?"":"disabled"}>Exportar CSV</button><button data-a="finish" class="fin" ${PLAYS.length&&UI.edit===null?"":"disabled"}>Finalizar partido</button></div>`:""}</div><button class="btn ghost" data-a="${UI.edit!==null?"canceledit":"cancel"}" ${J.tipo||UI.edit!==null?"":"disabled"}>Cancelar</button><button class="btn pri" data-a="save" ${m&&J.tipo&&G.pe!=="?"&&listo()?"":"disabled"}>${UI.edit!==null?"Guardar cambios":"Guardar"}</button></div></div>`;
  document.getElementById("app").className="phone";
  if(UI.pick)document.getElementById("app").insertAdjacentHTML("beforeend",pickSheet());
- document.getElementById("fld").onclick=tap;
+ wireField();
  const ts=document.getElementById("tSel");if(ts)ts.onchange=()=>selectSeason(ts.value);
  renderLog();}
 function renderLog(){
@@ -523,10 +534,15 @@ function renderLog(){
   return `<div class="drv ${d.side}"><div class="dh"><b>Drive ${k+1}</b> · ${d.side==="o"?"Ofensiva":"Defensiva"} · ${ps.length} jugada${ps.length===1?"":"s"} · ${yd} yd${end?` · <span>${end}</span>`:""}</div><div class="log">${d.idx.slice().reverse().map(i=>row(PLAYS[i],i)).join("")}</div></div>`;}).join("");
  el.innerHTML=h;}
 function drives(){const D=[];PLAYS.forEach((p,i)=>{const sd=p.pre.side;if(!D.length||D[D.length-1].side!==sd)D.push({side:sd,idx:[]});D[D.length-1].idx.push(i);});return D;}
-function tap(e){if(!UI.match||G.pe==="?")return;const n=need();if(!n)return;const b=e.currentTarget.getBoundingClientRect();
+function tap(e){if(!UI.match||G.pe==="?")return;let n=need();if(!n&&!J.tipo)return;const b=document.getElementById("fld").getBoundingClientRect();
  let x,yd;if(UI.ori==="h"){yd=W0()+(e.clientX-b.left)/b.width*WINf();x=(e.clientY-b.top)/b.height*25;}else{x=(e.clientX-b.left)/b.width*25;yd=W0()+WINf()-(e.clientY-b.top)/b.height*WINf();}
  x=Math.max(0,Math.min(25,x));yd=Math.max(-10,Math.min(60,yd));const p=[+x.toFixed(1),+yd.toFixed(1)];
- if(n==="spot"){G.spot=Math.round(Math.min(49,Math.max(1,p[1])));UI.mover=false;addAdj({spot:G.spot});}
+ if(!n){ // todo marcado: el nuevo toque pasa a ser el primer punto
+  if(J.tipo==="pase"){J.pt=p;J.fin=null;J.ret=null;J.yd=null;}
+  else if(J.tipo==="corr"||J.tipo==="sack"){J.fin=p;J.yd=null;}
+  else if(J.fsp)J.fsp=p;
+  draw();return;}
+ if(n==="spot"){G.spot=Math.round(Math.min(49,Math.max(1,p[1])));UI.mover=false;UI.pan=0;addAdj({spot:G.spot});}
  else if(n==="pt"){J.pt=p;J.yd=null;}else if(n==="ret")J.ret=p;else if(n==="fsp")J.fsp=p;else{J.fin=p;J.yd=null;}
  draw();}
 
@@ -579,9 +595,9 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="dur"){const was=UI.t===UI.dur;UI.dur=Math.max(60,Math.min(60*60,UI.dur+60*(+v)));UI.t=was?UI.dur:Math.min(UI.t,UI.dur);persist();}
  if(a==="peask")UI.peAsk=!UI.peAsk;
  if(a==="peoff"){G.pe=null;G.down=1;addAdj({pe:null,down:1});if(PLAYS.length&&PLAYS[PLAYS.length-1].post.pe==="?"){G.spot=5;G.side=G.side==="o"?"d":"o";addAdj({side:G.side,down:1});}}
- if(a==="vista"){UI.vista=v;UI.vmenu=false;}
+ if(a==="vista"){UI.vista=v;UI.vmenu=false;UI.pan=0;}
  if(a==="vmenu"){UI.vmenu=!UI.vmenu;draw();return;}
- if(a==="ori"){UI.ori=v;UI.vmenu=false;}
+ if(a==="ori"){UI.ori=v;UI.vmenu=false;UI.pan=0;}
  if(a==="side"){G.side=v;G.spot=5;G.down=1;G.pe=null;J=J0();addAdj({side:v,down:1});}
  if(a==="pe"){G.pe=+v;G.spot=v==="1"?45:40;UI.peAsk=false;addAdj({pe:+v});}
  if(a==="clk"){UI.run=!UI.run;clearInterval(tm);persist();if(UI.run)tm=setInterval(()=>{if(UI.t>0)UI.t--;else{UI.run=false;clearInterval(tm);draw();}document.querySelectorAll(".clkt").forEach(x=>x.textContent=fmt(UI.t));if(!document.activeElement||!document.activeElement.classList.contains("tin")){const tm_=document.querySelector('.tin[data-t="m"]'),ts_=document.querySelector('.tin[data-t="s"]');if(tm_)tm_.value=String(Math.floor(UI.t/60)).padStart(2,"0");if(ts_)ts_.value=String(UI.t%60).padStart(2,"0");}if(UI.t%5===0)persist();},1000);}
@@ -592,7 +608,9 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="clearyes"){PLAYS=[];G=G0();J=J0();UI.adj=null;UI.confirmClear=false;UI.status="";UI.t=UI.dur;UI.per="1T";UI.match.uploaded=false;persist();draw();return;}
  if(a==="export"){const {off,def}=buildRows();dl("Off",OFF_HDR,off);setTimeout(()=>dl("Def",DEF_HDR,def),300);UI.status=`⤓ Se descargaron ${esc(UI.match.id)}-Off.csv y ${esc(UI.match.id)}-Def.csv.`;UI.statusKind="";}
  if(a==="finish"){finish();return;}
- if(a==="matchopen")UI.matchOpen=!UI.matchOpen;
+ if(a==="matchpick"){UI.matchOpen=true;draw();window.scrollTo({top:0,behavior:"smooth"});return;}
+ if(a==="matchclose")UI.matchOpen=false;
+ if(a==="center")UI.pan=0;
  if(a==="gen"&&v!==gender){gender=v;RAW.set("fenixGender",gender);UI.match=null;boot();return;}
  if(a==="mpick"){const g=FIXGAMES.find(x=>x.id===v);if(!g)return;persist();loadMatch({id:g.id,fecha:g.fecha,rival:g.rival,uploaded:g.hasData});UI.matchOpen=false;}
  if(a==="mmanual"){const id=($("#mId").value||"").trim(),rv=($("#mRiv").value||"").trim()||"Rival";if(!id){$("#mId").focus();return;}persist();loadMatch({id,fecha:"",rival:rv});UI.matchOpen=false;}
