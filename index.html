@@ -122,7 +122,7 @@ svg.field{display:block;border-radius:6px;touch-action:manipulation;cursor:cross
 .btn.ok{border-color:rgba(74,222,128,.6)}.btn.ok.on{background:var(--ok);border-color:var(--ok);color:#0B2614}
 .btn.no{border-color:rgba(248,113,113,.5)}.btn.no.on{background:var(--err);border-color:var(--err);color:#2A0B0B}
 .btn.ix{border-color:rgba(96,165,250,.5)}.btn.ix.on{background:var(--int);border-color:var(--int);color:#0B1A2E}
-.r3{display:grid;grid-template-columns:repeat(3,1fr)}
+.r3{display:grid;grid-template-columns:repeat(3,1fr)}.r4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.r4 .btn{padding:0 2px;font-size:13px;min-width:0}
 .btn.ghost{background:none;color:var(--muted)}
 .btn:disabled{opacity:.35;cursor:default}
 .lab{font:700 11px var(--fd);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);width:100%;margin:10px 0 6px}
@@ -392,7 +392,7 @@ function field(){
  const w0=W0(),win=WINf(),[W,H]=DIM(),inW=yd=>yd>=w0&&yd<=w0+win;let h=`<rect width="${W}" height="${H}" fill="#1B3A22"/>`;
  h+=band(Math.max(-10,w0),0,G.side==="o"?"rgba(249,115,22,.10)":"rgba(184,178,245,.16)");
  if(w0+win>50)h+=band(50,Math.min(60,w0+win),G.side==="o"?"rgba(249,115,22,.22)":"rgba(184,178,245,.10)");
- [[20,25],[45,50]].forEach(([a,b])=>{if(b>w0&&a<w0+win)h+=band(Math.max(a,w0),b,"url(#hatch)");});
+ [[45,50]].forEach(([a,b])=>{if(b>w0&&a<w0+win)h+=band(Math.max(a,w0),b,"url(#hatch)");});
  for(let yd=-10;yd<=60;yd+=5){if(!inW(yd))continue;const goal=yd===0||yd===50,mid=yd===25;
   h+=yline(yd,`stroke="${goal||mid?"rgba(255,255,255,.75)":"rgba(255,255,255,.18)"}" stroke-width="${goal||mid?2:1}"`);
   if(yd>0&&yd<50){const[a,b]=UI.ori==="h"?[P(1.2,yd),P(24.2,yd)]:[P(0.6,yd-0.3),P(24.4,yd-0.3)];
@@ -455,7 +455,7 @@ function sheet(){
  if(J.tipo==="pase"){
   const R=o?[["I","Incomp.","no"],["D","Drop","no"],["X","Intercep.","ix"]]:[["I","Incomp.","no"],["F","Desviado","no"],["X","Intercep.","ix"]];
   const rb=([k,l,c])=>`<button class="btn ${c} ${J.res===k?"on":""}" data-a="set" data-k="res" data-v="${k}">${l}</button>`;
-  h+=`<div class="lab">Resultado</div><div class="row">${rb(["C","Completo","ok"])}</div><div class="row r3">${R.map(rb).join("")}</div>`;
+  h+=`<div class="lab">Resultado</div><div class="row r4">${[["C","Completo","ok"]].concat(R).map(rb).join("")}</div>`;
   if(o){h+=NUMS("Pasa","pas",PASAN);if(J.res!=="X")h+=NUMS("Receptor","rec",MIO.filter(x=>x[0]!==J.pas));if(J.res==="C"){h+=ydc();h+=amg("Amagues del receptor");}}
   else{
    if(J.res==="F"||J.res==="X")h+=NUMS(J.res==="F"?"Quién desvió":"Quién interceptó","def",MIO,true);
