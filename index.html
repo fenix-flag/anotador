@@ -37,7 +37,7 @@ h1{font-family:var(--fd);font-weight:800;text-transform:uppercase;font-size:30px
 .la{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .del{min-width:28px;height:28px;border-radius:4px;border:1px solid var(--line-2);background:none;color:var(--muted);cursor:pointer;font:700 12px var(--fb)}
 .del.sure{border-color:var(--err);color:var(--err);padding:0 6px}
-.actions{margin-top:8px;position:sticky;bottom:0;background:var(--surface);padding:6px 0 4px;z-index:5;border-top:1px solid var(--line)}.abtns{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px}.tbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:6px}.tbar .btn{min-height:40px;padding:0 3px;display:flex;align-items:center;justify-content:center;gap:4px;letter-spacing:.02em;font-size:14px;min-width:0}.tbar .btn svg{width:15px;height:15px;flex:none}.tbar .btn.fl{border-color:rgba(250,204,21,.5)}.tbar .btn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.actions{margin-top:8px;position:sticky;bottom:0;background:var(--surface);padding:8px 0 6px;z-index:5;border-top:1px solid var(--line)}.abtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.abtns .btn{border-radius:6px}.abtns .btn svg{width:22px;height:22px}.tbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:8px}.tbar .btn{min-height:54px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;letter-spacing:.04em;font-size:14px;min-width:0;border-radius:6px}.tbar .btn svg{width:20px;height:20px;flex:none}.tbar .btn.fl{border-color:rgba(250,204,21,.5)}.tbar .btn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .pmw{position:relative;display:flex}.pmw .btn{width:100%}
 .pmenu{position:absolute;bottom:calc(100% + 6px);left:0;min-width:200px;background:var(--surface);border:1px solid var(--line-2);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.55);padding:6px;display:flex;flex-direction:column;z-index:10}
 .pmenu button{min-height:44px;text-align:left;padding:0 12px;background:none;border:0;border-radius:4px;color:var(--ink);font:600 14px var(--fb);cursor:pointer}.pmenu button:hover{background:var(--line)}.pmenu button:disabled{opacity:.35;cursor:default}.pmenu .fin{color:var(--accent-ink)}
@@ -151,7 +151,7 @@ svg.field{display:block;border-radius:6px;touch-action:manipulation;cursor:cross
 .flow ol{margin:6px 0 0;padding-left:20px}
  .empty{color:var(--dim);font-size:13px}
 .editbar{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px 10px;border-radius:6px;background:rgba(249,115,22,.12);border:1px solid var(--accent);font:700 13px var(--fb)}
-.log .ed{margin-left:6px}
+.log .ed{margin-left:6px}.log .wn{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}.wnc{font-style:normal;color:var(--muted);font-size:12px;font-weight:700}
 .pfbox{border:1px solid rgba(250,204,21,.45);border-radius:6px;padding:8px;margin-bottom:8px}.fx{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:600 12px var(--fb)}
 .oribar{flex-wrap:wrap;display:flex;gap:6px;align-items:center;margin:0 0 14px;font:600 14px var(--fb);color:var(--muted)}
 .oribar span{padding:8px 14px;border:1px solid var(--line-2);border-radius:4px;color:var(--ink);cursor:pointer}.oribar span.on{border-color:var(--accent);background:rgba(249,115,22,.12)}
@@ -205,7 +205,11 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 const RAW={get(k,d){try{let v=localStorage.getItem(k);if(v==null)return d;if(/^".*"$/.test(v))v=JSON.parse(v);return v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,String(v));}catch(e){}}};
 let gender=RAW.get("fenixGender","m"); if(gender!=="f")gender="m";
 let INDEX=null, season="", FIXGAMES=[], LOGOS={}, ROSTER=[], QBS=[];
-let MIO=[], PASAN=[], LOADING=true, pendingDraw=false, OTHERGAMES=[], TEAMS=[];
+let MIO=[], PASAN=[], LOADING=true, pendingDraw=false, OTHERGAMES=[], TEAMS=[], BIBEQ=[], BIBLOGO={};
+async function loadBibEquipos(){BIBEQ=LS.get("fenixBibEq3_"+gender,[]);BIBLOGO={};BIBEQ.forEach(t=>{if(t.logo)BIBLOGO[nkey(t.name)]=t.logo;});
+ try{const t=tableOf(await fetchTab(CONFIG.INDEX_ID,"Biblioteca_Equipos"));if(!t)return;const gg=gender==="f"?"f":"m";
+  BIBEQ=t.rows.map(r=>({name:t.col(r,"Equipo"),gen:nkey(t.col(r,"Genero")),logo:t.col(r,"Logo")})).filter(x=>x.name&&nkey(x.name)!=="fenix"&&(!x.gen||x.gen[0]===gg||x.gen.startsWith("amb"))).sort((a,b)=>a.name.localeCompare(b.name));
+  BIBLOGO={};BIBEQ.forEach(t=>{if(t.logo)BIBLOGO[nkey(t.name)]=t.logo;});LS.set("fenixBibEq3_"+gender,BIBEQ);}catch(e){}}
 /* ---- scouting / amistosos ---- */
 const SC=()=>!!(typeof UI!=="undefined"&&UI.match&&UI.match.scout);
 const scA=()=>SC()?UI.match.scout.a:"Fenix", scB=()=>SC()?UI.match.scout.b:(UI.match?UI.match.rival:"Rival");
@@ -222,9 +226,9 @@ async function loadScoutRoster(){const id=scoutId();if(!id)return;try{const t=ta
  LS.set("fenixScoutRoster_"+gender,r);}catch(e){}}
 function amistososSeason(){if(!INDEX)return null;const gg=gender==="f"?"femenino":"masculino";const r=INDEX.filter(x=>nkey(x.genero)===gg&&(/amistos/i.test(x.tipo)||/amistos/i.test(x.temporada)));return r.length?r.map(x=>x.temporada).sort().reverse()[0]:null;}
 function isAmistosoSeason(){if(!INDEX)return false;const gg=gender==="f"?"femenino":"masculino";const r=INDEX.find(x=>x.temporada===season&&nkey(x.genero)===gg);return !!(r&&(/amistos/i.test(r.tipo)||/amistos/i.test(r.temporada)));}
-function safeDraw(){const ae=document.activeElement;if(ae&&(ae.id==='tSel'||ae.id==='mId'||ae.id==='mRiv'||ae.id==='sA'||ae.id==='sB'||ae.id==='amRiv'||ae.id==='newNum'||ae.classList.contains('tin')||ae.classList.contains('ydin'))){pendingDraw=true;return;}pendingDraw=false;draw();}
+function safeDraw(){const ae=document.activeElement;if(ae&&(ae.id==='tSel'||ae.id==='mId'||ae.id==='mRiv'||ae.id==='sA'||ae.id==='sB'||ae.id==='amRiv'||ae.id==='amSel'||ae.id==='newNum'||ae.classList.contains('tin')||ae.classList.contains('ydin'))){pendingDraw=true;return;}pendingDraw=false;draw();}
 document.addEventListener('focusout',()=>{if(pendingDraw)setTimeout(safeDraw,50);});
-const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,lastTipo:"pase",mmode:"fenix",mmsg:"",showAll:false,lastPas:null,lastRec:null,lastCor:null};
+const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,dots:"num",abIco:true,hash:true,lastTipo:"pase",mmode:"fenix",mmsg:"",showAll:false,lastPas:null,lastRec:null,lastCor:null};
 let FREQ={};
 const G0=()=>({side:"o",spot:5,down:1,pe:null,sc:{f:0,r:0},n:0});
 const J0=()=>({yd:null,tipo:UI.lastTipo||"pase",pas:SC()?null:(UI.lastPas||(QBS[0]||null)),cor:SC()?null:(UI.lastCor||null),rec:SC()?null:(UI.lastRec||null),rfl:null,rfe:[],dsv:null,dsvR:false,res:(UI.lastTipo||"pase")==="pase"?"C":null,pt:null,fin:null,def:null,fe:[],am:0,ret:null,pick:false,pf:false,facc:null,fq:null,fj:null,ft:null,fy:null,fd:null,fsp:null,tt:null});
@@ -355,11 +359,11 @@ function apply(g,j){
  else if(td){g.sc[o?"f":"r"]+=6;tag="TD";tc="var(--ok)";g.pe="?";}
  else if(j.res==="X"){tag="INT";tc="var(--int)";cambia();}
  else{
-  if(e==null){tag="SIN UBIC.";tc="#FACC15";if(g.down!==null)g.down++;}
+  if(e==null){tag="SIN INFO";tc="var(--muted)";if(g.down!==null)g.down++;}
   else if(g.spot<25&&e>=25){g.down=1;tag="1° DOWN";tc="#FACC15";g.spot=Math.round(e);}
   else{g.spot=Math.max(1,Math.round(e));if(g.down!==null)g.down++;}
   if(g.down!==null&&g.down>4){tag="4° ✕";tc="var(--err)";cambia();}}
- return {off,def,log:{d:(pe?"PE":base.down===""?"–":base.down+"°")+" · "+yLblSpot(base.spot),txt,tag,tc,o}};}
+ return {off,def,log:{warn:tag==="SIN INFO",d:(pe?"PE":base.down===""?"–":base.down+"°")+" · "+yLblSpot(base.spot),txt,tag,tc,o}};}
 function applyAdj(g,a){if(!a)return;if("down" in a&&!a.side)g.down=a.down;if(a.side){g.side=a.side;g.spot=5;g.down=1;g.pe=null;}if(a.pe){g.pe=a.pe;g.spot=a.pe===1?45:40;}else if("pe" in a&&a.pe===null)g.pe=null;if(a.spot!=null)g.spot=a.spot;if("down" in a&&a.side)g.down=a.down;}
 function push(j,adj){const pre=clone(G);const res=apply(G,clone(j));PLAYS.push({pre,inp:clone(j),adj:adj?clone(adj):null,off:res.off,def:res.def,log:res.log,post:clone(G)});}
 function rebuild(list,pend){G=G0();PLAYS=[];list.forEach(p=>{applyAdj(G,p.adj);push(p.inp,p.adj);});UI.adj=pend||null;if(pend)applyAdj(G,pend);}
@@ -430,7 +434,10 @@ function field(){
  for(let yd=-10;yd<=60;yd+=5){if(!inW(yd))continue;const goal=yd===0||yd===50,mid=yd===25;
   h+=yline(yd,`stroke="${goal||mid?"rgba(255,255,255,.75)":"rgba(255,255,255,.18)"}" stroke-width="${goal||mid?2:1}"`);
   if(yd>0&&yd<50){const[a,b]=UI.ori==="h"?[P(1.2,yd),P(24.2,yd)]:[P(0.6,yd-0.3),P(24.4,yd-0.3)];
-   h+=`<text class="yn" x="${a[0]}" y="${a[1]}" text-anchor="${UI.ori==="h"?"middle":"start"}">${yLbl(yd)}</text><text class="yn" x="${b[0]}" y="${b[1]}" text-anchor="${UI.ori==="h"?"middle":"end"}">${yLbl(yd)}</text>`;}}
+   const yy=UI.dots==="num"&&[5,10,40,45].includes(yd)?' style="fill:#FACC15;font-size:13px;font-weight:800"':"";
+   h+=`<text class="yn"${yy} x="${a[0]}" y="${a[1]}" text-anchor="${UI.ori==="h"?"middle":"start"}">${yLbl(yd)}</text><text class="yn"${yy} x="${b[0]}" y="${b[1]}" text-anchor="${UI.ori==="h"?"middle":"end"}">${yLbl(yd)}</text>`;}}
+ if(UI.hash)for(let yd=1;yd<50;yd++){if(yd%5===0||!inW(yd))continue;[[0,0.9],[24.1,25]].forEach(([x1,x2])=>{const[a1,b1]=P(x1,yd),[a2,b2]=P(x2,yd);h+=`<line x1="${a1}" y1="${b1}" x2="${a2}" y2="${b2}" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>`;});}
+ [5,10,40,45].forEach(yd=>{if(!inW(yd)||UI.dots==="num")return;(UI.dots==="tres"?[2.8,12.5,22.2]:[2.8,22.2]).forEach(x=>{const[cx,cy]=P(x,yd);h+=`<circle cx="${cx}" cy="${cy}" r="4.5" fill="#FACC15" stroke="#0E0F12" stroke-width="1"/>`;});});
  if(w0+win>=52){const[c0,c1]=P(12.5,55);h+=`<text x="${c0}" y="${c1+5}" text-anchor="middle" ${UI.ori==="h"?`transform="rotate(-90 ${c0} ${c1})"`:""} style="font:800 16px var(--fd);letter-spacing:.3em;fill:rgba(255,255,255,.35)">TOUCHDOWN</text>`;}
  h+=yline(G.spot,'stroke="#FDBA74" stroke-width="2" stroke-dasharray="6 5"');
  if(G.pe===null&&G.spot<25)h+=yline(25,'stroke="#FACC15" stroke-width="2.5" opacity=".8"');
@@ -467,7 +474,7 @@ const addNumRow=P=>P.team?`<div class="addnum"><input id="newNum" type="number" 
 function pickSheet(){const P=PICKS[UI.pick];if(!P)return "";
  if(P.multi){const cur=J[UI.pick]||[];return `<div class="bsback" data-a="pickclose"></div><div class="bsheet"><div class="bsh"><span>${P.lbl}</span><button class="fx" data-a="pickclose">Listo</button></div><div class="bsgrid">${P.list.length?P.list.map(([n,nm])=>`<button class="bst${P.d?" d":""} ${cur.includes(n)?"on":""}" data-a="pickmulti" data-k="${UI.pick}" data-v="${n}"><b>${n}</b><span>${esc(nm)}</span></button>`).join(""):'<p class="empty" style="grid-column:1/-1">${P.team?"Todavía no hay números de este equipo: agregalos abajo.":"No hay plantel cargado para este torneo."}</p>'}</div>${addNumRow(P)}<div class="bsfoot"><button class="btn ghost" data-a="pickclear" data-k="${UI.pick}" ${cur.length?"":"disabled"}>Ninguno</button><button class="btn pri" data-a="pickclose">Listo${cur.length?" ("+cur.length+")":""}</button></div></div>`;}
  return `<div class="bsback" data-a="pickclose"></div><div class="bsheet"><div class="bsh"><span>${P.lbl}</span><button class="fx" data-a="pickclose">Cerrar</button></div><div class="bsgrid">${P.list.length?P.list.map(([n,nm])=>`<button class="bst${P.d?" d":""} ${J[UI.pick]===n?"on":""}" data-a="pickset" data-k="${UI.pick}" data-v="${n}"><b>${n}</b><span>${esc(nm)}</span></button>`).join(""):'<p class="empty" style="grid-column:1/-1">${P.team?"Todavía no hay números de este equipo: agregalos abajo.":"No hay plantel cargado para este torneo."}</p>'}</div>${addNumRow(P)}${P.team&&J[UI.pick]?`<div class="bsfoot"><button class="btn ghost" data-a="pickset" data-k="${UI.pick}" data-v="">Sin número</button></div>`:""}</div>`;}
-const teamLogo=(name,cls,ab)=>{const l=name==="Fenix"?LOGO:LOGOS[nkey(name)];return `<span class="lg ${cls}">${l?`<img src="${esc(l)}" alt="" onerror="this.remove()">`:""}<em>${ab}</em></span>`;};
+const teamLogo=(name,cls,ab)=>{const l=name==="Fenix"?LOGO:(LOGOS[nkey(name)]||BIBLOGO[nkey(name)]);return `<span class="lg ${cls}">${l?`<img src="${esc(l)}" alt="" onerror="this.remove()">`:""}<em>${ab}</em></span>`;};
 function scoreHTML(){const sc=SC(),A=scA(),abA=sc?A.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ]/g,"").slice(0,3).toUpperCase():"FNX",riv=sc?scB():rivalName(),ab=riv.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ]/g,"").slice(0,3).toUpperCase()||"RIV",pp=`<button class="pp" data-a="clk" aria-label="${UI.run?"Pausar":"Iniciar"} reloj">${UI.run?"❚❚":"▶"}</button>`;
  return `<div class="sb-tv"><div class="tm f">${teamLogo(A,"f",abA)}<span class="nm">${esc(A)}</span><b>${G.sc.f}</b></div>
   <div class="mid" data-a="clkedit"><span class="per">${UI.per} · ✎</span><b class="clkt">${fmt(UI.t)}</b>${pp}</div>
@@ -530,11 +537,11 @@ function peSheet(){return `<div class="lab">Punto extra</div><div class="row"><b
 function matchPanel(){const seasons=seasonsForGender(),scm=UI.mmode==="scout";
  const list=scm?OTHERGAMES.map(g=>{const id=scoutGameId(g),pend=pendingCount(id,true),up=uploadedFlag(id,true);return `<button class="mitem ${UI.match&&UI.match.id===id?"on":""}" data-a="spick" data-v="${esc(g.id)}" ${g.id?"":"disabled"}><span class="mid">${esc(g.id||"sin ID")}</span><span>${esc(g.fecha?g.fecha+" · ":"")}${esc(g.a)} vs ${esc(g.b)}</span>${pend&&!up?`<span class="pend">${pend} sin subir</span>`:up?'<span class="ok">✓ subido</span>':""}</button>`;}).join(""):FIXGAMES.map(g=>{const pend=pendingCount(g.id),up=uploadedFlag(g.id)||g.hasData;return `<button class="mitem ${UI.match&&UI.match.id===g.id?"on":""}" data-a="mpick" data-v="${esc(g.id)}" ${g.id?"":"disabled"}><span class="mid">${esc(g.id||"sin ID")}</span><span>${esc(g.fecha?g.fecha+" · ":"")}vs ${esc(g.rival)}</span>${pend&&!uploadedFlag(g.id)?`<span class="pend">${pend} sin subir</span>`:up?'<span class="ok">✓ subido</span>':""}</button>`;}).join("");
  return `<div class="mpanel" id="mpanel"><div class="mphd"><span>Elegir partido</span>${UI.match?'<button class="fx" data-a="matchclose">Cerrar</button>':""}</div><div class="mtabs">${[["fenix","Fenix"],["scout","Scouting"]].map(([k,l])=>`<button class="dsel ${UI.mmode===k?"on":""}" data-a="mmode" data-v="${k}" style="font-size:14px;letter-spacing:.06em;text-transform:uppercase">${l}</button>`).join("")}</div><div class="row" style="margin:0 0 8px">${[["m","Masculino"],["f","Femenino"]].map(([g,l])=>`<button class="dsel ${gender===g?"on":""}" data-a="gen" data-v="${g}" style="font-size:14px;letter-spacing:.06em;text-transform:uppercase">${l}</button>`).join("")}</div>
- ${!seasons.length&&LOADING?'<p class="empty">Cargando torneos…</p>':''}${seasons.length?`<select class="msel" id="tSel">${seasons.map(s=>`<option ${s===season?"selected":""}>${esc(s)}</option>`).join("")}</select>`:""}
- <div class="mlist">${list||(scm&&!LOADING?'<p class="empty">No hay partidos de otros equipos en este fixture. Cargalo a mano abajo.</p>':LOADING?'<p class="empty">Cargando partidos del fixture…</p>':'<p class="empty">No pude leer el fixture (¿sin señal o vacío?). Cargá el partido a mano abajo.</p>')}</div>
+ ${!seasons.length&&LOADING?'<p class="empty">Cargando torneos…</p>':''}${seasons.length?`<select class="msel" id="tSel">${seasons.map(s=>`<option value="${esc(s)}" ${s===season?"selected":""}>${esc(s)}${!/amistos/i.test(s)&&(INDEX||[]).some(r=>r.temporada===s&&/amistos/i.test(r.tipo))?" · amistosos":""}</option>`).join("")}${!scm&&!amistososSeason()?'<option value="__ami">Amistoso (falta crear el torneo)</option>':""}</select>`:""}
+ <div class="mlist">${list||(!scm&&!LOADING&&isAmistosoSeason()?'<p class="empty">Todavía no hay amistosos cargados. Creá uno abajo.</p>':scm&&!LOADING?'<p class="empty">No hay partidos de otros equipos en este fixture. Cargalo a mano abajo.</p>':LOADING?'<p class="empty">Cargando partidos del fixture…</p>':'<p class="empty">No pude leer el fixture (¿sin señal o vacío?). Cargá el partido a mano abajo.</p>')}</div>
  ${scm?`<div class="lab">Otro partido (equipos de cualquier torneo)</div><datalist id="tlist">${TEAMS.map(t=>`<option value="${esc(t)}">`).join("")}</datalist><div class="row"><input class="tin2" id="sA" list="tlist" placeholder="Local"><input class="tin2" id="sB" list="tlist" placeholder="Visitante"><button class="btn" data-a="smanual" style="flex:none;padding:0 14px">Usar</button></div>`
- :`<div class="lab">Otro partido del torneo</div><div class="row"><input class="tin2" id="mId" placeholder="ID (ej: m26-12)"><input class="tin2" id="mRiv" placeholder="Rival"><button class="btn" data-a="mmanual" style="flex:none;padding:0 14px">Usar</button></div>
- <div class="lab">Amistoso (rival sin registrar)</div><div class="row"><input class="tin2" id="amRiv" placeholder="Rival"><button class="btn" data-a="amistoso" style="flex:none;padding:0 14px">Crear</button></div>`}
+ :`${isAmistosoSeason()?"":`<div class="lab">Otro partido del torneo</div><div class="row"><input class="tin2" id="mId" placeholder="ID (ej: m26-12)"><input class="tin2" id="mRiv" placeholder="Rival"><button class="btn" data-a="mmanual" style="flex:none;padding:0 14px">Usar</button></div>`}
+ ${isAmistosoSeason()?`<div class="lab">Nuevo amistoso</div><div class="row"><select class="msel" id="amSel" style="margin:0;flex:1;min-width:0"><option value="">Rival sin registrar (ninguno)</option>${BIBEQ.map(t=>`<option value="${esc(t.name)}">${esc(t.name)}</option>`).join("")}</select></div><div class="row" style="margin-top:6px"><input class="tin2" id="amRiv" placeholder="Nombre del rival (opcional)"><button class="btn" data-a="amistoso" style="flex:none;padding:0 14px">Crear</button></div>`:""}`}
  ${UI.mmsg?`<div class="mmsg">${UI.mmsg}</div>`:""}</div>`;}
 const scoutGameId=g=>`S${gender.toUpperCase()}-${slug(season)}-${g.id}`;
 function draw(){
@@ -559,11 +566,11 @@ function draw(){
  <div class="plist" id="log"></div>
  ${UI.confirmClear?`<div class="confirm">¿Borrar las ${PLAYS.length} jugadas de este partido? <button class="btn no on" data-a="clearyes">Sí, vaciar</button><button class="btn ghost" data-a="clearask">No</button></div>`:""}
  ${UI.status&&UPK.includes(UI.statusKind)?`<div class="upback"></div><div class="upmodal ${UI.statusKind}" role="alertdialog" aria-live="assertive">${UI.statusKind==="wait"?'<div class="spin"></div><b>Subiendo…</b>':UI.statusKind==="ok"?'<div class="upic">✓</div><b>Partido subido</b>':'<div class="upic">!</div><b>No se subió</b>'}<p>${UI.status.replace(/^✓\s*/,"")}</p>${UI.statusKind==="wait"?"":'<button class="btn pri" data-a="stclose">Entendido</button>'}</div>`:""}
- <div class="actions">${UI.status&&!UPK.includes(UI.statusKind)?`<div class="status ${UI.statusKind}"><span>${UI.status}</span>${UI.statusKind==="wait"?"":'<button class="fx" data-a="stclose" aria-label="Cerrar aviso">✕</button>'}</div>`:""}<div class="tbar">${[["pase","Pase"],["corr","Corrida"],["sack","Sack"],["falta","Falta"]].map(([k,l])=>`<button class="btn${k==="falta"?" fl":""} ${J.tipo===k?"on":""}" data-a="tipo" data-v="${k}" ${m&&G.pe!=="?"?"":"disabled"}>${TICO[k]}<span>${l}</span></button>`).join("")}</div><div class="abtns"><div class="pmw"><button class="btn" data-a="pmenu">Partido ${UI.pmenu?"▾":"▴"}</button>${UI.pmenu?`<div class="pmenu"><button data-a="matchpick">Elegir partido</button><button data-a="clearask" ${PLAYS.length?"":"disabled"}>Limpiar / vaciar</button><button data-a="export" ${PLAYS.length?"":"disabled"}>Exportar CSV</button><button data-a="finish" class="fin" ${PLAYS.length&&UI.edit===null?"":"disabled"}>Finalizar partido</button></div>`:""}</div><button class="btn ghost" data-a="${UI.edit!==null?"canceledit":"cancel"}" ${J.tipo||UI.edit!==null?"":"disabled"}>Cancelar</button><button class="btn pri" data-a="save" ${m&&J.tipo&&G.pe!=="?"&&listo()?"":"disabled"}>${UI.edit!==null?"Guardar cambios":"Guardar"}</button></div></div>`;
+ <div class="actions">${UI.status&&!UPK.includes(UI.statusKind)?`<div class="status ${UI.statusKind}"><span>${UI.status}</span>${UI.statusKind==="wait"?"":'<button class="fx" data-a="stclose" aria-label="Cerrar aviso">✕</button>'}</div>`:""}<div class="tbar">${[["pase","Pase"],["corr","Corrida"],["sack","Sack"],["falta","Falta"]].map(([k,l])=>`<button class="btn${k==="falta"?" fl":""} ${J.tipo===k?"on":""}" data-a="tipo" data-v="${k}" ${m&&G.pe!=="?"?"":"disabled"}>${TICO[k]}<span>${l}</span></button>`).join("")}</div><div class="abtns"><div class="pmw"><button class="btn" data-a="pmenu" aria-label="Partido">${UI.abIco?ABI.gear:`Partido ${UI.pmenu?"▾":"▴"}`}</button>${UI.pmenu?`<div class="pmenu"><button data-a="matchpick">Elegir partido</button><button data-a="clearask" ${PLAYS.length?"":"disabled"}>Limpiar / vaciar</button><button data-a="export" ${PLAYS.length?"":"disabled"}>Exportar CSV</button><button data-a="finish" class="fin" ${PLAYS.length&&UI.edit===null?"":"disabled"}>Finalizar partido</button></div>`:""}</div><button class="btn ghost" data-a="${UI.edit!==null?"canceledit":"cancel"}" ${J.tipo||UI.edit!==null?"":"disabled"} aria-label="Cancelar">${UI.abIco?ABI.x:"Cancelar"}</button><button class="btn pri" data-a="save" ${m&&J.tipo&&G.pe!=="?"&&listo()?"":"disabled"} aria-label="Guardar">${UI.abIco?ABI.ok:UI.edit!==null?"Guardar cambios":"Guardar"}</button></div></div>`;
  document.getElementById("app").className="phone";
  if(UI.pick)document.getElementById("app").insertAdjacentHTML("beforeend",pickSheet());
  wireField();
- const ts=document.getElementById("tSel");if(ts)ts.onchange=()=>selectSeason(ts.value);
+ const ts=document.getElementById("tSel");if(ts)ts.onchange=()=>{if(ts.value==="__ami"){UI.mmsg=`No hay un torneo de amistosos para ${gender==="f"?"Femenino":"Masculino"}. Crealo desde el Panel (Nuevo torneo → tipo <b>Amistosos</b>) y aparece acá.`;ts.value=season;draw();return;}UI.mmsg="";selectSeason(ts.value);};
  renderLog();}
 function renderLog(){
  const row=(p,i)=>{const l=p.log;return `<div style="border-left:3px solid ${l.o?"var(--accent)":"var(--def)"}${UI.edit===i?";outline:1px solid var(--accent)":""}"><i>${l.d}</i><span class="lt">${esc(l.txt)}</span>${l.tag?`<span class="tag" style="color:${l.tc};border:1px solid ${l.tc}">${l.tag}</span>`:'<span class="tag" style="border:0"></span>'}<span class="la">${UI.edit===null?`<button class="fx" data-a="edit" data-i="${i}">Editar</button><button class="del ${UI.delAsk===i?"sure":""}" data-a="del" data-i="${i}" aria-label="Borrar jugada">${UI.delAsk===i?"¿Borrar?":"✕"}</button>`:UI.edit===i?'<span class="fx" style="text-decoration:none;color:var(--accent-ink)">editando</span>':""}</span></div>`;};
@@ -571,7 +578,7 @@ function renderLog(){
  if(!PLAYS.length){el.innerHTML='<div class="lab" style="margin-top:0">Última jugada</div><span class="empty">Todavía no hay jugadas.</span>';return;}
  const D=drives();const nO=D.filter(d=>d.side==="o").length,nD=D.length-nO,li=PLAYS.length-1;
  let h=`<div class="lab" style="margin-top:0">Última jugada</div><div class="log">${row(PLAYS[li],li)}</div>
- <div class="tot"><div><b>${PLAYS.length}</b> jugadas <span>(${nO} drive${nO===1?"":"s"} ${SC()?esc(scA()):"ofensiva"} | ${nD} drive${nD===1?"":"s"} ${SC()?esc(scB()):"defensiva"})</span></div><button class="btn" data-a="showall">${UI.showAll?"Ocultar":"Ver"}</button></div>`;
+ <div class="tot"><div><b>${PLAYS.length}</b> jugadas${PLAYS.filter(p=>p.log.warn).length?` <em class="wnc">· ${PLAYS.filter(p=>p.log.warn).length} sin info</em>`:""} <span>(${nO} drive${nO===1?"":"s"} ${SC()?esc(scA()):"ofensiva"} | ${nD} drive${nD===1?"":"s"} ${SC()?esc(scB()):"defensiva"})</span></div><button class="btn" data-a="showall">${UI.showAll?"Ocultar":"Ver"}</button></div>`;
  if(UI.showAll)h+=D.map((d,k)=>({d,k})).reverse().map(({d,k})=>{const ps=d.idx.map(i=>PLAYS[i]);const yd=ps.reduce((a,p)=>{const r=(p.off[0]||p.def[0]||{});const v=r["yd de pase"]!==undefined&&r["yd de pase"]!==""?r["yd de pase"]:r["yd corrida"]!==undefined&&r["yd corrida"]!==""?r["yd corrida"]:r["yd rival"];return a+(typeof v==="number"?v:0);},0);const end=ps.map(p=>p.log.tag).filter(t=>["TD","INT","PE ✕","4° ✕","SAFETY","PICK 6","PICK 2"].includes(t)||/^\+\d/.test(t)).join(" · ");
   return `<div class="drv ${d.side}"><div class="dh"><b>Drive ${k+1}</b> · ${SC()?"Ataca "+esc(d.side==="o"?scA():scB()):d.side==="o"?"Ofensiva":"Defensiva"} · ${ps.length} jugada${ps.length===1?"":"s"} · ${yd} yd${end?` · <span>${end}</span>`:""}</div><div class="log">${d.idx.slice().reverse().map(i=>row(PLAYS[i],i)).join("")}</div></div>`;}).join("");
  el.innerHTML=h;}
@@ -609,6 +616,7 @@ function uploadUrl(){try{const c=JSON.parse(localStorage.getItem("fenixPanel.cfg
 const destinoTxt=()=>`${gender==="f"?"Femenino":"Masculino"} · ${season||"(sin torneo)"}`;
 const UPK=["wait","ok","err"];
 const ico=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ABI={gear:ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),x:ico('<path d="M6 6l12 12M18 6 6 18"/>'),ok:ico('<path d="M4.5 12.5l5 5L19.5 7"/>')};
 const TICO={pase:ico('<path d="M4 19C7 9 13 5.5 20 6"/><path d="M15.5 3.5 20 6l-2.4 4.5"/>'),corr:ico('<path d="M5 6l6 6-6 6M13 6l6 6-6 6"/>'),sack:ico('<circle cx="12" cy="12" r="8"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/>'),falta:ico('<path d="M5 21V4"/><path d="M5 4h11l-2.5 4 2.5 4H5"/>')};
 function setStatus(html,kind){UI.status=html;UI.statusKind=kind||"";draw();}
 function postJSON(url,body){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),90000);
@@ -678,7 +686,7 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="mmode"){UI.mmode=v;UI.mmsg="";}
  if(a==="spick"){const g=OTHERGAMES.find(x=>x.id===v);if(!g)return;persist();openScout({id:scoutGameId(g),fecha:g.fecha,a:g.a,b:g.b});return;}
  if(a==="smanual"){const A=($("#sA").value||"").trim(),B=($("#sB").value||"").trim();if(!A){$("#sA").focus();return;}if(!B){$("#sB").focus();return;}persist();const d=hoy();openScout({id:`S${gender.toUpperCase()}-${d.id}-${slug(A)}-${slug(B)}`,fecha:d.txt,a:A,b:B});return;}
- if(a==="amistoso"){const rv=($("#amRiv").value||"").trim();if(!rv){$("#amRiv").focus();return;}openAmistoso(rv);return;}
+ if(a==="amistoso"){const sel=($("#amSel")&&$("#amSel").value)||"",rv=sel||($("#amRiv").value||"").trim()||"Rival";openAmistoso(rv);return;}
  if(a==="mmanual"){const id=($("#mId").value||"").trim(),rv=($("#mRiv").value||"").trim()||"Rival";if(!id){$("#mId").focus();return;}persist();loadMatch({id,fecha:"",rival:rv});UI.matchOpen=false;}
  if(a==="save"){savePlay();return;}
  draw();};
@@ -686,13 +694,14 @@ async function openScout(g){UI.mmsg="";loadMatch({id:g.id,fecha:g.fecha,rival:g.
 async function openAmistoso(rv){const am=amistososSeason();
  if(!am){UI.mmsg=`No hay un torneo de amistosos para ${gender==="f"?"Femenino":"Masculino"}. Crealo desde el Panel (Nuevo torneo → tipo <b>Amistosos</b>) y volvé a intentar.`;draw();return;}
  persist();if(season!==am){season=am;RAW.set("fenixTourn_"+gender,season);UI.match=null;}
- const d=hoy();loadMatch({id:`AM-${d.id}-${slug(rv)}`,fecha:d.txt,rival:rv,amistoso:true});UI.matchOpen=false;UI.mmsg="";await loadSeason();}
+ const d=hoy();let id=`AM-${d.id}-${slug(rv)}`,k=2;while(FIXGAMES.some(g=>g.id===id)||pendingCount(id)){id=`AM-${d.id}-${slug(rv)}-${k++}`;}
+ loadMatch({id,fecha:d.txt,rival:rv,amistoso:true});UI.matchOpen=false;UI.mmsg="";await loadSeason();}
 async function selectSeason(s){document.activeElement&&document.activeElement.blur&&document.activeElement.blur();season=s;RAW.set("fenixTourn_"+gender,season);UI.match=null;await loadSeason();}
 async function loadSeason(){
  FIXGAMES=LS.get(`fenixFix3_${gender}_${season}`,[]);OTHERGAMES=LS.get(`fenixFixO3_${gender}_${season}`,[]);LOGOS=LS.get(`fenixLogos3_${gender}_${season}`,{});ROSTER=LS.get(`fenixRoster3_${gender}_${season}`,[]);setRoster();
  const cur=LS.get("fenixAnot3_cur_"+gender,null);if(!UI.match&&cur&&cur.season===season&&cur.match)loadMatch(cur.match);
  LOADING=true;safeDraw();
- await Promise.all([loadFixture(),loadRoster()]);LOADING=false;
+ await Promise.all([loadFixture(),loadRoster(),loadBibEquipos()]);LOADING=false;
  if(!UI.match){const cur2=LS.get("fenixAnot3_cur_"+gender,null);if(cur2&&cur2.season===season&&cur2.match)loadMatch(cur2.match);}
  if(!SC())J.pas=J.pas||UI.lastPas||QBS[0]||null;safeDraw();}
 async function boot(){
