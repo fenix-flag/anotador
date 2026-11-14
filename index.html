@@ -231,7 +231,7 @@ document.addEventListener('focusout',()=>{if(pendingDraw)setTimeout(safeDraw,50)
 const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,dots:"num",abIco:true,hash:true,lastTipo:"pase",mmode:"fenix",mmsg:"",showAll:false,lastPas:null,lastRec:null,lastCor:null};
 let FREQ={};
 const G0=()=>({side:"o",spot:5,down:1,pe:null,sc:{f:0,r:0},n:0});
-const J0=()=>({yd:null,tipo:UI.lastTipo||"pase",pas:SC()?null:(UI.lastPas||(QBS[0]||null)),cor:SC()?null:(UI.lastCor||null),rec:SC()?null:(UI.lastRec||null),rfl:null,rfe:[],dsv:null,dsvR:false,res:(UI.lastTipo||"pase")==="pase"?"C":null,pt:null,fin:null,def:null,fe:[],am:0,ret:null,pick:false,pf:false,facc:null,fq:null,fj:null,ft:null,fy:null,fd:null,fsp:null,tt:null});
+const J0=()=>({mc:false,yd:null,tipo:UI.lastTipo||"pase",pas:SC()?null:(UI.lastPas||(QBS[0]||null)),cor:SC()?null:(UI.lastCor||null),rec:SC()?null:(UI.lastRec||null),rfl:null,rfe:[],dsv:null,dsvR:false,res:(UI.lastTipo||"pase")==="pase"?"C":null,pt:null,fin:null,def:null,fe:[],am:0,ret:null,pick:false,pf:false,facc:null,fq:null,fj:null,ft:null,fy:null,fd:null,fsp:null,tt:null});
 let G=G0(),J=J0(),PLAYS=[];
 const yLbl=y=>y<0||y>50?"zona":String(y<=25?Math.round(y):Math.round(50-y));
 const yLblSpot=s=>(s<=25?"propia ":"rival ")+(s<=25?s:50-s);
@@ -272,9 +272,9 @@ function need(){
  if((J.tipo==="falta"||J.pf)&&J.fy==="spot"&&!J.fsp)return "fsp";
  if(J.tipo==="pase"&&J.res==="C"&&!J.fin&&J.yd==null)return "fin";
  if(J.tipo==="pase"&&J.res==="X"&&!J.ret&&!J.pick)return "ret";
- if((J.tipo==="corr"||J.tipo==="sack")&&!J.fin&&J.yd==null)return "fin";
+ if((J.tipo==="corr"||(J.tipo==="sack"&&!J.mc))&&!J.fin&&J.yd==null)return "fin";
  return null;}
-function listo(){const sc=SC(),o=G.side==="o"||sc;
+function listo(){const sc=SC(),o=G.side==="o"||sc;if(J.tipo==="sack"&&J.mc&&!J.pf)return true;
  if(J.pf&&!(J.fq&&(J.fq!=="F"||sc||J.fj)&&(J.fy!=="spot"||J.fsp)))return false;
  if(J.tipo==="falta")return !!J.fq&&(J.fq!=="F"||sc||!!J.fj)&&(J.fy!=="spot"||!!J.fsp);
  if(anulada(J))return true;
@@ -294,6 +294,12 @@ function apply(g,j){
  if(j.yd!=null&&!j.pt&&!j.fin)base.ubicacion="yardas a mano";else if((j.tipo==="pase"&&j.res==="C"&&!j.pt)||((j.tipo==="corr"||j.tipo==="sack")&&!j.fin))base.ubicacion="pendiente";
  if(j.tipo==="falta"||j.pf){base["tipo falta"]=j.fq==="A"?"Ambos equipos (compensadas)":(j.ft||"");if(j.pf)base["falta aceptada"]=an?"falta":"jugada";}
  const off=[],def=[];
+ if(j.tipo==="sack"&&j.mc&&!an){const r=Object.assign({},base,{"tipo jugada":"mal centro",resultado:""});delete r.ubicacion;if(pe&&o)Object.assign(r,{"pt ext":0,"motivo pe":"mal centro"});if(!o&&pe)r.situacion="PE";
+  if(sc){r.equipo=o?scA():scB();off.push(r);}else(o?off:def).push(r);
+  let txt="Mal centro · pierde el down",tag="MAL CENTRO",tc="var(--muted)";
+  if(pe){g.pe=null;g.spot=5;g.down=1;g.side=o?"d":"o";tag="PE ✕";tc="var(--err)";txt+=" · cambia la posesión";}
+  else if(g.down!==null){g.down++;if(g.down>4){tag="4° ✕";tc="var(--err)";g.spot=5;g.down=1;g.side=o?"d":"o";txt+=" · cambia la posesión";}}
+  return {off,def,log:{d:(pe?"PE":base.down===""?"–":base.down+"°")+" · "+yLblSpot(base.spot),txt,tag,tc,o}};}
  const buildOff=()=>{const r=Object.assign({},base);
   if(!an){
    if(j.tipo==="pase"){
@@ -357,7 +363,7 @@ function apply(g,j){
  else if(pk){g.sc[o?"r":"f"]+=6;tag="PICK 6";tc="var(--int)";g.side=o?"d":"o";g.pe="?";g.down=1;}
  else if(pe){if(td){g.sc[o?"f":"r"]+=g.pe;tag="+"+g.pe;tc="var(--ok)";}else{tag="PE ✕";tc="var(--err)";}g.pe=null;cambia();}
  else if(td){g.sc[o?"f":"r"]+=6;tag="TD";tc="var(--ok)";g.pe="?";}
- else if(j.res==="X"){tag="INT";tc="var(--int)";cambia();}
+ else if(j.res==="X"){tag="INT";tc="var(--int)";const rp=j.ret||j.pt;cambia();if(rp){g.spot=Math.min(49,Math.max(1,Math.round(50-rp[1])));txt=txt.replace(" · cambia la posesión"," · cambia la posesión en la "+yLblSpot(g.spot));}}
  else{
   if(e==null){tag="SIN INFO";tc="var(--muted)";if(g.down!==null)g.down++;}
   else if(g.spot<25&&e>=25){g.down=1;tag="1° DOWN";tc="#FACC15";g.spot=Math.round(e);}
@@ -510,7 +516,9 @@ function sheet(){
    if(o)h+=flagsDef({lbl:"Quién le sacó el flag al que interceptó (opcional)",capt:!(J.pick||auto),k1:"rfl",k2:"rfe",list:OL,team:AT});}
  }
  if(J.tipo==="corr"){if(o){h+=NUMS("Corre"+(sc?" (opcional)":""),"cor",OL,false,AT);h+=ydc();h+=amg("Amagues");if(sc)h+=flagsDef({list:DL,team:DT,capt:!isTD(J,G)});}else{h+=ydc();h+=flagsDef({capt:!isTD(J,G)});}}
- if(J.tipo==="sack"){if(o)h+=NUMS("QB"+(sc?" (opcional)":""),"pas",PL,false,AT);h+=ydc();if(!o||sc)h+=NUMS("Quién hizo el sack"+(sc?" (opcional)":""),"def",DL,true,DT);}
+ if(J.tipo==="sack"){h+=`<div class="row" style="margin-bottom:8px"><button class="btn ${!J.mc?"on":""}" data-a="mc" data-v="">Sack</button><button class="btn ${J.mc?"on":""}" data-a="mc" data-v="1">Mal centro</button></div>`;}
+ if(J.tipo==="sack"&&J.mc)h+=`<p class="empty" style="margin:0 0 8px">Se pierde el down y la pelota queda donde estaba${G.pe!==null?" (en punto extra: no convierte)":""}.</p>`;
+ else if(J.tipo==="sack"){if(o)h+=NUMS("QB"+(sc?" (opcional)":""),"pas",PL,false,AT);h+=ydc();if(!o||sc)h+=NUMS("Quién hizo el sack"+(sc?" (opcional)":""),"def",DL,true,DT);}
  if(J.tipo==="falta")h+=faltaForm();
  if(J.tipo!=="falta"){
   if(!J.pf)h+=`<div class="row"><button class="btn ghost" data-a="pf" style="border-color:rgba(250,204,21,.5);color:#FACC15">+ Falta en la jugada</button></div>`;
@@ -520,7 +528,7 @@ function sheet(){
    if(sc)who=J.pas||J.rec?"#"+(J.pas||"?")+" → #"+(J.rec||"?"):atkName();t=J.res==="C"?(g==null?`Pase ${who} completo · <span style="color:#FACC15">sin ubicación (se completa después)</span>`:(air!=null&&J.yd==null?`Pase ${who}: <b>${air}</b> yd en el aire${g-air?` + <b>${g-air}</b> después`:""} = <b>${g}</b> yd`:`Pase ${who}: <b>${g}</b> yd${J.yd!=null?" (a mano)":""}`)):J.res==="X"?"Intercepción":J.res==="D"?`Drop de #${J.rec}`:J.res==="F"?"Pase desviado":"Pase incompleto";
    if(J.res==="C"&&J.am)t+=` · ${J.am} amague${J.am>1?"s":""}`;}
   if(J.tipo==="corr")t=g==null?`Corrida ${o?"#"+J.cor:"rival"} · <span style="color:#FACC15">sin ubicación</span>`:`Corrida ${o?"#"+J.cor:"rival"}: <b>${g}</b> yd${J.am?` · ${J.am} amague${J.am>1?"s":""}`:""}`;
-  if(J.tipo==="sack")t=g==null?"Sack · sin ubicación":`Sack: <b>${g}</b> yd`;
+  if(J.tipo==="sack")t=J.mc?"Mal centro · pierde el down":g==null?"Sack · sin ubicación":`Sack: <b>${g}</b> yd`;
   const intO=o&&J.tipo==="pase"&&J.res==="X";
   if(J.tipo==="pase"&&J.res==="X"&&(J.dsv||J.dsvR))t+=J.dsv?` · desvío de #${J.dsv}`:" · con desvío";
   if(intO){if(J.rfl&&!isPick(J))t+=` · #${J.rfl} le sacó el flag`;if(J.rfe.length)t+=` · erró el flag: #${J.rfe.join(", #")}`;}
@@ -583,7 +591,7 @@ function renderLog(){
   return `<div class="drv ${d.side}"><div class="dh"><b>Drive ${k+1}</b> · ${SC()?"Ataca "+esc(d.side==="o"?scA():scB()):d.side==="o"?"Ofensiva":"Defensiva"} · ${ps.length} jugada${ps.length===1?"":"s"} · ${yd} yd${end?` · <span>${end}</span>`:""}</div><div class="log">${d.idx.slice().reverse().map(i=>row(PLAYS[i],i)).join("")}</div></div>`;}).join("");
  el.innerHTML=h;}
 function drives(){const D=[];PLAYS.forEach((p,i)=>{const sd=p.pre.side;if(!D.length||D[D.length-1].side!==sd)D.push({side:sd,idx:[]});D[D.length-1].idx.push(i);});return D;}
-function tap(e){if(!UI.match||G.pe==="?")return;let n=need();if(!n&&!J.tipo)return;const b=document.getElementById("fld").getBoundingClientRect();
+function tap(e){if(!UI.match||G.pe==="?")return;if(J.tipo==="sack"&&J.mc&&!UI.mover)return;let n=need();if(!n&&!J.tipo)return;const b=document.getElementById("fld").getBoundingClientRect();
  let x,yd;if(UI.ori==="h"){yd=W0()+(e.clientX-b.left)/b.width*WINf();x=(e.clientY-b.top)/b.height*25;}else{x=(e.clientX-b.left)/b.width*25;yd=W0()+WINf()-(e.clientY-b.top)/b.height*WINf();}
  x=Math.max(0,Math.min(25,x));yd=Math.max(-10,Math.min(60,yd));const p=[+x.toFixed(1),+yd.toFixed(1)];
  if(!n){ // todo marcado: el nuevo toque pasa a ser el primer punto
@@ -647,6 +655,7 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="addnum"){const P=PICKS[el.dataset.k],inp=$("#newNum");if(!P||!inp)return;const n=addTeamNum(P.team,inp.value);if(n==null){inp.focus();return;}const k=el.dataset.k;
   if(P.multi){const c=J[k]||[];if(!c.includes(n))J[k]=c.concat(n);draw();setTimeout(()=>{const i=$("#newNum");if(i)i.focus();},0);}else{J[k]=n;UI.pick=null;draw();}return;}
  if(a==="dsvr"){J.dsvR=!J.dsvR;draw();return;}
+ if(a==="mc"){J.mc=!!v;if(J.mc){J.fin=null;J.yd=null;}draw();return;}
  if(a==="pickclear"){J[el.dataset.k]=[];draw();return;}
  if(a==="pickset"){J[el.dataset.k]=v||null;UI.pick=null;draw();return;}
  if(a==="set"){const k=el.dataset.k;J[k]=J[k]===v&&!["res","fq","facc","fy","fd"].includes(k)?null:v;if(k==="res"&&v!=="C")J.fin=null;if(k==="res"){J.def=null;J.pick=false;J.ret=null;}if(k==="fq")J.fj=null;if(k==="fy")J.fsp=null;}
