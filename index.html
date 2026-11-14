@@ -499,17 +499,17 @@ function sheet(){
   const rb=([k,l,c])=>`<button class="btn ${c} ${J.res===k?"on":""}" data-a="set" data-k="res" data-v="${k}">${l}</button>`;
   h+=`<div class="lab">Resultado</div><div class="row r4">${[["C","Completo","ok"]].concat(R).map(rb).join("")}</div>`;
   if(o){h+=NUMS("Pasa"+(sc?" (opcional)":""),"pas",PL,false,AT);if(J.res!=="X")h+=NUMS("Receptor"+(sc?" (opcional)":""),"rec",OL.filter(x=>x[0]!==J.pas),false,AT);if(J.res==="C"){h+=ydc();h+=amg("Amagues del receptor");}
-   if(sc){if(J.res==="I")h+=NUMS("Quién desvió (opcional)","def",DL,true,DT);if(J.res==="X"){h+=NUMS("Quién interceptó (opcional)","def",DL,true,DT);h+=amg("Amagues en la devolución");}if(J.res==="C"&&!isTD(J,G))h+=flagsDef({list:DL,team:DT});}}
+   if(sc){if(J.res==="I")h+=NUMS("Quién desvió (opcional)","def",DL,true,DT);if(J.res==="X"){h+=NUMS("Quién interceptó (opcional)","def",DL,true,DT);h+=amg("Amagues en la devolución");}if(J.res==="C")h+=flagsDef({list:DL,team:DT,capt:!isTD(J,G)});}}
   else{
    if(J.res==="F"||J.res==="X")h+=NUMS(J.res==="F"?"Quién desvió":"Quién interceptó","def",MIO,true);
    if(J.res==="X")h+=amg("Amagues en la devolución");
    if(J.res==="C")h+=ydc();
-   if(J.res==="C"&&!isTD(J,G))h+=flagsDef();}
+   if(J.res==="C")h+=flagsDef({capt:!isTD(J,G)});}
   if(J.res==="X"){const pk=G.pe!==null?"Pick 2":"Pick 6",auto=J.ret&&J.ret[1]<0;h+=`<div class="row" style="margin-top:10px"><button class="btn ix ${J.pick||auto?"on":""}" data-a="pick6" ${auto?"disabled style=\"opacity:1\"":""}>${pk}${auto?" · por el mapa":""}</button></div>`;
    if(sc)h+=NUMS("Hubo desvío antes: quién (opcional)","dsv",DL,true,DT);else if(!o)h+=NUMS("Hubo desvío antes: quién (opcional)","dsv",MIO,true);
    if(o)h+=flagsDef({lbl:"Quién le sacó el flag al que interceptó (opcional)",capt:!(J.pick||auto),k1:"rfl",k2:"rfe",list:OL,team:AT});}
  }
- if(J.tipo==="corr"){if(o){h+=NUMS("Corre"+(sc?" (opcional)":""),"cor",OL,false,AT);h+=ydc();h+=amg("Amagues");if(sc&&!isTD(J,G))h+=flagsDef({list:DL,team:DT});}else{h+=ydc();if(!isTD(J,G))h+=flagsDef();}}
+ if(J.tipo==="corr"){if(o){h+=NUMS("Corre"+(sc?" (opcional)":""),"cor",OL,false,AT);h+=ydc();h+=amg("Amagues");if(sc)h+=flagsDef({list:DL,team:DT,capt:!isTD(J,G)});}else{h+=ydc();h+=flagsDef({capt:!isTD(J,G)});}}
  if(J.tipo==="sack"){if(o)h+=NUMS("QB"+(sc?" (opcional)":""),"pas",PL,false,AT);h+=ydc();if(!o||sc)h+=NUMS("Quién hizo el sack"+(sc?" (opcional)":""),"def",DL,true,DT);}
  if(J.tipo==="falta")h+=faltaForm();
  if(J.tipo!=="falta"){
