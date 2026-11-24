@@ -228,7 +228,7 @@ function amistososSeason(){if(!INDEX)return null;const gg=gender==="f"?"femenino
 function isAmistosoSeason(){if(!INDEX)return false;const gg=gender==="f"?"femenino":"masculino";const r=INDEX.find(x=>x.temporada===season&&nkey(x.genero)===gg);return !!(r&&(/amistos/i.test(r.tipo)||/amistos/i.test(r.temporada)));}
 function safeDraw(){const ae=document.activeElement;if(ae&&(ae.id==='tSel'||ae.id==='mId'||ae.id==='mRiv'||ae.id==='sA'||ae.id==='sB'||ae.id==='amRiv'||ae.id==='amSel'||ae.id==='newNum'||ae.classList.contains('tin')||ae.classList.contains('ydin'))){pendingDraw=true;return;}pendingDraw=false;draw();}
 document.addEventListener('focusout',()=>{if(pendingDraw)setTimeout(safeDraw,50);});
-const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,perAsk:null,dots:"num",abIco:true,hash:true,lastTipo:"pase",mmode:"fenix",mmsg:"",showAll:false,lastPas:null,lastRec:null,lastCor:null};
+const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,sv:"banda",perAsk:null,dots:"num",abIco:true,hash:true,lastTipo:"pase",mmode:"fenix",mmsg:"",showAll:false,lastPas:null,lastRec:null,lastCor:null};
 let FREQ={};
 const G0=()=>({side:"o",spot:5,down:1,pe:null,sc:{f:0,r:0},n:0});
 const J0=()=>({mc:false,yd:null,tipo:UI.lastTipo||"pase",pas:SC()?null:(UI.lastPas||(QBS[0]||null)),cor:SC()?null:(UI.lastCor||null),rec:SC()?null:(UI.lastRec||null),rfl:null,rfe:[],dsv:null,dsvR:false,res:(UI.lastTipo||"pase")==="pase"?"C":null,pt:null,fin:null,def:null,fe:[],am:0,ret:null,pick:false,pf:false,facc:null,fq:null,fj:null,ft:null,fy:null,fd:null,fsp:null,tt:null});
@@ -440,12 +440,17 @@ function field(){
  for(let yd=-10;yd<=60;yd+=5){if(!inW(yd))continue;const goal=yd===0||yd===50,mid=yd===25;
   h+=yline(yd,`stroke="${goal||mid?"rgba(255,255,255,.75)":"rgba(255,255,255,.18)"}" stroke-width="${goal||mid?2:1}"`);
   if(yd>0&&yd<50){const[a,b]=UI.ori==="h"?[P(1.2,yd),P(24.2,yd)]:[P(0.6,yd-0.3),P(24.4,yd-0.3)];
-   const yy=UI.dots==="num"&&[5,10,40,45].includes(yd)?' style="fill:#FACC15;font-size:13px;font-weight:800"':"";
+   const yy=UI.dots==="num"&&[5,10,40,45].includes(yd)?' style="fill:#FACC15"':"";
    h+=`<text class="yn"${yy} x="${a[0]}" y="${a[1]}" text-anchor="${UI.ori==="h"?"middle":"start"}">${yLbl(yd)}</text><text class="yn"${yy} x="${b[0]}" y="${b[1]}" text-anchor="${UI.ori==="h"?"middle":"end"}">${yLbl(yd)}</text>`;}}
  if(UI.hash)for(let yd=1;yd<50;yd++){if(yd%5===0||!inW(yd))continue;[[0,0.9],[24.1,25]].forEach(([x1,x2])=>{const[a1,b1]=P(x1,yd),[a2,b2]=P(x2,yd);h+=`<line x1="${a1}" y1="${b1}" x2="${a2}" y2="${b2}" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>`;});}
  [5,10,40,45].forEach(yd=>{if(!inW(yd)||UI.dots==="num")return;(UI.dots==="tres"?[2.8,12.5,22.2]:[2.8,22.2]).forEach(x=>{const[cx,cy]=P(x,yd);h+=`<circle cx="${cx}" cy="${cy}" r="4.5" fill="#FACC15" stroke="#0E0F12" stroke-width="1"/>`;});});
  if(w0+win>=52){const[c0,c1]=P(12.5,55);h+=`<text x="${c0}" y="${c1+5}" text-anchor="middle" ${UI.ori==="h"?`transform="rotate(-90 ${c0} ${c1})"`:""} style="font:800 16px var(--fd);letter-spacing:.3em;fill:rgba(255,255,255,.35)">TOUCHDOWN</text>`;}
  h+=yline(G.spot,'stroke="#FDBA74" stroke-width="2" stroke-dasharray="6 5"');
+ if(UI.sv&&G.pe===null){const y7=G.spot+7,C="#5EEAD4";if(inW(y7)&&y7<50){
+  if(UI.sv==="banda"){h+=band(G.spot,y7,"rgba(94,234,212,.10)");h+=yline(y7,`stroke="${C}" stroke-width="1" opacity=".5"`);}
+  if(UI.sv==="linea"){h+=yline(y7,`stroke="${C}" stroke-width="1.8" stroke-dasharray="2 5" stroke-linecap="round"`);const[tx,ty]=P(12.5,y7);h+=UI.ori==="h"?`<text x="${tx+5}" y="${ty+4}" style="font:700 10px var(--fb);fill:${C}">7</text>`:`<rect x="${tx-17}" y="${ty-8}" width="34" height="16" rx="8" fill="#0E0F12" stroke="${C}"/><text x="${tx}" y="${ty+4}" text-anchor="middle" style="font:800 10px var(--fb);fill:${C}">7 YD</text>`;}
+  if(UI.sv==="flechas"){[[0,1],[25,-1]].forEach(([x,d])=>{const[ax,ay]=P(x,y7);const pts=UI.ori==="h"?`${ax},${ay} ${ax-6},${ay+12*d} ${ax+6},${ay+12*d}`:`${ax},${ay} ${ax+12*d},${ay-6} ${ax+12*d},${ay+6}`;h+=`<polygon points="${pts}" fill="${C}" stroke="#0E0F12" stroke-width="1"/>`;});}
+  if(UI.sv==="ticks"){[[0,2.2],[22.8,25],[11.3,13.7]].forEach(([x1,x2])=>{const[a1,b1]=P(x1,y7),[a2,b2]=P(x2,y7);h+=`<line x1="${a1}" y1="${b1}" x2="${a2}" y2="${b2}" stroke="${C}" stroke-width="3" stroke-linecap="round"/>`;});}}}
  if(G.pe===null&&G.spot<25)h+=yline(25,'stroke="#FACC15" stroke-width="2.5" opacity=".8"');
  const[bx,by]=P(12.5,G.spot);h+=`<ellipse cx="${bx}" cy="${by}" rx="${UI.ori==="h"?4:6}" ry="${UI.ori==="h"?6:4}" fill="#8B4513" stroke="#F4F2EE" stroke-width="1"/>`;
  const[qx,qy]=P(12.5,G.spot-(J.tipo==="pase"||J.tipo==="sack"?3:1.2));
