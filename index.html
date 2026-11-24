@@ -228,7 +228,7 @@ function amistososSeason(){if(!INDEX)return null;const gg=gender==="f"?"femenino
 function isAmistosoSeason(){if(!INDEX)return false;const gg=gender==="f"?"femenino":"masculino";const r=INDEX.find(x=>x.temporada===season&&nkey(x.genero)===gg);return !!(r&&(/amistos/i.test(r.tipo)||/amistos/i.test(r.temporada)));}
 function safeDraw(){const ae=document.activeElement;if(ae&&(ae.id==='tSel'||ae.id==='mId'||ae.id==='mRiv'||ae.id==='sA'||ae.id==='sB'||ae.id==='amRiv'||ae.id==='amSel'||ae.id==='newNum'||ae.classList.contains('tin')||ae.classList.contains('ydin'))){pendingDraw=true;return;}pendingDraw=false;draw();}
 document.addEventListener('focusout',()=>{if(pendingDraw)setTimeout(safeDraw,50);});
-const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,sv:"banda",perAsk:null,dots:"num",abIco:true,hash:true,lastTipo:"pase",mmode:"fenix",mmsg:"",showAll:false,lastPas:null,lastRec:null,lastCor:null};
+const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,impAsk:false,sv:"banda",perAsk:null,dots:"num",abIco:true,hash:true,lastTipo:"pase",mmode:"fenix",mmsg:"",showAll:false,lastPas:null,lastRec:null,lastCor:null};
 let FREQ={};
 const G0=()=>({side:"o",spot:5,down:1,pe:null,sc:{f:0,r:0},n:0});
 const J0=()=>({mc:false,yd:null,tipo:UI.lastTipo||"pase",pas:SC()?null:(UI.lastPas||(QBS[0]||null)),cor:SC()?null:(UI.lastCor||null),rec:SC()?null:(UI.lastRec||null),rfl:null,rfe:[],dsv:null,dsvR:false,res:(UI.lastTipo||"pase")==="pase"?"C":null,pt:null,fin:null,def:null,fe:[],am:0,ret:null,pick:false,pf:false,facc:null,fq:null,fj:null,ft:null,fy:null,fd:null,fsp:null,tt:null});
@@ -400,6 +400,55 @@ function loadMatch(m){UI.match=m;const st=LS.get(matchKey(m),null);
  if(st){UI.t=st.t??20*60;UI.per=st.per||"1T";UI.dur=st.dur||20*60;UI.lastPas=st.last&&st.last.pas||null;UI.lastRec=st.last&&st.last.rec||null;UI.lastCor=st.last&&st.last.cor||null;FREQ=st.freq||{};m.uploaded=st.uploaded||m.uploaded;rebuild(st.plays||[],st.pend||null);}
  else{UI.t=UI.dur;UI.per="1T";UI.lastPas=null;UI.lastRec=null;UI.lastCor=null;FREQ={};G=G0();PLAYS=[];UI.adj=null;}
  J=J0();persist();}
+/* ---------------- traer jugadas ya subidas ---------------- */
+async function importPlays(){const m=UI.match;if(!m)return;const sc=!!m.scout,sid=sc?scoutId():sheetIdFor();
+ if(!sid)return setStatus("No encuentro la planilla de scouting en este celular: subí el partido una vez desde acá.","err",1);
+ setStatus("Trayendo las jugadas de la planilla…","wait",1);
+ let to,td;try{[to,td]=await Promise.all([fetchTab(sid,"Off"),fetchTab(sid,"Def")]);}catch(e){return setStatus("No pude leer la planilla (¿sin señal?). No se cambió nada.","err",1);}
+ const objs=rows=>{const t=tableOf(rows);if(!t)return[];return t.rows.map(r=>{const o={};for(const k in t.I)o[nkey(k)]=String(r[t.I[k]]??"").trim();return o;}).filter(o=>o.partido===m.id);};
+ const OF=objs(to),DF=objs(td),v=(o,k)=>o?(o[nkey(k)]||""):"";
+ if(!OF.length&&!DF.length)return setStatus("Este partido no tiene jugadas en la planilla.","err",1);
+ if(!OF.concat(DF).some(o=>v(o,"tipo jugada")))return setStatus("Este partido se cargó con el anotador anterior: no tiene los datos para volver a armar las jugadas.","err",1);
+ const by={};const grp=j=>by[j]=by[j]||{off:null,def:null,mini:[]};
+ OF.forEach(o=>{const j=+v(o,"jugada");if(!j)return;if(v(o,"tipo jugada"))grp(j).off=o;});
+ DF.forEach(o=>{const j=+v(o,"jugada");if(!j)return;if(v(o,"tipo jugada"))grp(j).def=o;else grp(j).mini.push(o);});
+ const P2=x=>{if(!x)return null;const a=x.split(",").map(Number);return a.length===2&&a.every(n=>!isNaN(n))?a:null;};
+ const num=x=>{const n=parseFloat(x);return isNaN(n)?null:n;};
+ const TM={pase:"pase",corrida:"corr",sack:"sack",falta:"falta","mal centro":"sack"};
+ const A=sc?m.scout.a:"Fenix";let prev=null;const list=[];
+ Object.keys(by).map(Number).sort((a,b)=>a-b).forEach(j=>{const x=by[j],O=x.off,D=x.def,R0=O||D;if(!R0)return;
+  const side=sc?(nkey(v(O||D,"equipo"))===nkey(A)?(O?"o":"d"):(O?"d":"o")):(O?"o":"d");
+  const tj=nkey(v(R0,"tipo jugada")),tipo=TM[tj]||tj,pe=v(R0,"down")==="PE"||v(R0,"situacion")==="PE",spot=num(v(R0,"spot"))??5;
+  const inp=Object.assign(J0(),{tipo,res:tipo==="pase"?(v(R0,"resultado")||"C"):null,pas:null,rec:null,cor:null,def:null,fe:[],rfl:null,rfe:[],dsv:null,dsvR:false,am:0,pt:null,fin:null,ret:null,yd:null,pick:false,pf:false,mc:tj==="mal centro",tt:v(R0,"tiempo")||null});
+  if(tipo==="corr"){const ini=P2(v(R0,"inicio x,y")),f=P2(v(R0,"fin x,y"));if(ini){inp.pt=ini;inp.fin=f;}else inp.fin=f;}
+  else{inp.pt=P2(v(R0,"recep x,y"));inp.fin=P2(v(R0,"fin x,y"));}
+  inp.ret=P2(v(D,"devolucion x,y"));
+  if(O){const ps=tipo==="pase",cr=tipo==="corr";
+   inp.pas=v(O,"pasador")||v(O,"pas inc")||v(O,"pasador pe fallado")||v(O,"asist p ext")||(tipo==="sack"?v(O,"sack"):"")||null;
+   inp.rec=(ps?(v(O,"receptor")||v(O,"drop")||v(O,"jugador pe fallado")||v(O,"jugador p ext")):"")||null;
+   inp.cor=(cr?(v(O,"corredor")||v(O,"jugador p ext")||v(O,"jugador pe fallado")):"")||null;
+   inp.am=+v(O,"amagues")||0;if(v(O,"pick 6 rival")||v(O,"pick 2 rival"))inp.pick=true;if(v(O,"desvio")==="si")inp.dsvR=true;}
+  if(D){inp.def=v(D,"flag capturado")||v(D,"pase desviado")||v(D,"intercepcion")||v(D,"sacks")||null;if(!O)inp.am=+v(D,"amagues")||0;if(v(D,"pick 6")||v(D,"pick 2"))inp.pick=true;}
+  const atkTeam=sc?v(O,"equipo"):null;
+  x.mini.forEach(mn=>{const fc=v(mn,"flag capturado"),fe=v(mn,"flag errado"),ds=v(mn,"pase desviado");
+   const isAtk=sc?nkey(v(mn,"equipo"))===nkey(atkTeam):side==="o";
+   if(isAtk){if(fc)inp.rfl=fc;if(fe)inp.rfe.push(fe);}else{if(fe)inp.fe.push(fe);if(ds)inp.dsv=ds;}});
+  if(tipo==="corr"||tipo==="sack"||(tipo==="pase"&&inp.res==="C")){if(v(R0,"ubicacion")==="yardas a mano"){const g=O?(num(v(O,"yd de pase"))??num(v(O,"yd corrida"))):num(v(D,"yd rival"));if(g!=null)inp.yd=g;}}
+  const tf=v(R0,"tipo falta");
+  if(tf||tipo==="falta"){if(tipo!=="falta"){inp.pf=true;inp.facc=v(R0,"falta aceptada")==="falta"?"falta":"jugada";}
+   const fF=sc?nkey(v(O||D,"falta equipo"))===nkey(A):!!(v(O,"falta jugador")||v(D,"faltas realizadas"));
+   inp.fq=/ambos/i.test(tf)?"A":fF?"F":"R";inp.fj=v(O,"falta jugador")||v(O,"falta recibida")||v(D,"faltas realizadas")||v(D,"faltas recibidas")||null;inp.ft=/ambos/i.test(tf)?null:(tf||null);inp.fy=5;inp.fd="rep";}
+  const wantTD=O?!!(v(O,"td jugador")||(+v(O,"pt ext")>0)||v(O,"puntos")):!!(v(D,"td rival")||(+v(D,"pe rival")>0));
+  if(wantTD&&!inp.pick){if(tipo==="pase")inp.res="C";const e=endYd(inp,{spot});if(e==null||e<50)inp.yd=50-spot;}
+  const drv=+v(R0,"drive")||0,peV=pe?((O?+v(O,"pt ext"):+v(D,"pe rival"))||(spot>=44?1:2)):null;
+  const adj={side,spot,down:pe?1:(v(R0,"down")===""?null:+v(R0,"down")),pe:pe?peV:null};
+  if(prev&&prev.side===side&&drv&&prev.drv&&drv!==prev.drv)adj.brk=true;
+  prev={side,drv};list.push({inp,adj});});
+ if(!list.length)return setStatus("No encontré jugadas para armar.","err",1);
+ rebuild(list,null);J=J0();UI.edit=null;
+ const lt=(list[list.length-1].inp.tt||"").split(" ");if(lt[0]&&/^(1T|2T|Extra)$/.test(lt[0])){UI.per=lt[0];const mm=/^(\d+):(\d+)$/.exec(lt[1]||"");if(mm)UI.t=Math.max(0,UI.dur-(+mm[1]*60+ +mm[2]));}
+ m.uploaded=true;UI.impAsk=false;persist();
+ setStatus(`✓ Se trajeron ${list.length} jugadas · ${esc(scA())} ${G.sc.f} – ${G.sc.r} ${esc(scB())}. Ya podés editarlas y volver a Finalizar.`,"ok",1);}
 const pendingCount=(id,scout)=>{const st=LS.get(keyFor(id,scout),null);return st&&st.plays?st.plays.length:0;};
 const uploadedFlag=(id,scout)=>{const st=LS.get(keyFor(id,scout),null);return !!(st&&st.uploaded);};
 
@@ -575,6 +624,8 @@ function draw(){
   <div class="mmss"><div class="tf"><button class="dsel" data-a="tadj" data-v="-60">−</button><input class="tin" data-t="m" type="number" inputmode="numeric" value="${String(Math.floor(UI.t/60)).padStart(2,"0")}" aria-label="Minutos"><button class="dsel" data-a="tadj" data-v="60">+</button></div><b class="colon">:</b><div class="tf"><button class="dsel" data-a="tadj" data-v="-1">−</button><input class="tin" data-t="s" type="number" inputmode="numeric" value="${String(UI.t%60).padStart(2,"0")}" aria-label="Segundos"><button class="dsel" data-a="tadj" data-v="1">+</button></div></div>
   <div class="row" style="margin:10px 0 0;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px">Duración del tiempo <button class="dsel" style="flex:none;width:34px" data-a="dur" data-v="-1">−</button><b style="color:var(--ink)">${UI.dur/60}′</b><button class="dsel" style="flex:none;width:34px" data-a="dur" data-v="1">+</button></span><button class="btn pri" style="flex:none;min-height:36px;padding:0 16px" data-a="clkedit">Listo</button></div></div>`:""}
  ${UI.edit!==null?`<div class="editbar">Editando la jugada ${UI.edit+1}<button class="fx" data-a="canceledit">Cancelar edición</button></div>`:""}
+ ${m&&!PLAYS.length&&!UI.impAsk&&(m.uploaded||(FIXGAMES.find(g=>g.id===m.id)||{}).hasData)?`<div class="perask"><span class="dk">Este partido ya tiene jugadas en la planilla</span><div class="row" style="margin:6px 0 0"><button class="btn" data-a="impask">Traer jugadas para editarlas</button></div></div>`:""}
+ ${UI.impAsk?`<div class="confirm">¿Reemplazar las ${PLAYS.length} jugadas de este celular por las de la planilla? <button class="btn no on" data-a="impyes">Sí, traer</button><button class="btn ghost" data-a="impno">No</button></div>`:""}
  ${UI.perAsk&&m?`<div class="perask"><span class="dk">Arranca ${esc(UI.perAsk)} · ¿quién ataca?</span><div class="row" style="margin:6px 0 0"><button class="btn" data-a="perside" data-v="o">${SC()?"Ataca "+esc(scA()):"Ataca Fenix"}</button><button class="btn" data-a="perside" data-v="d">${SC()?"Ataca "+esc(scB()):"Ataca "+esc(rivalName())}</button></div><div class="pmsg">Empieza un drive nuevo desde la 5 con 1° down, aunque le vuelva a tocar al mismo equipo.</div></div>`:""}
  <div class="sit"><div class="side full"><span class="o ${G.side==="o"?"on":""}" data-a="side" data-v="o">${SC()?"Ataca "+esc(scA()):"Ofensiva"}</span><span class="d ${G.side==="d"?"on":""}" data-a="side" data-v="d">${SC()?"Ataca "+esc(scB()):"Defensiva"}</span></div></div>
  <div class="downs">${G.pe!==null?`<span class="dk">Down</span><span class="dpe">${G.pe==="?"?"Punto extra":"Punto extra · x"+G.pe}</span>${G.pe!=="?"?`<button class="fx" data-a="peoff">Quitar</button>`:""}`:`<span class="dk">Down</span>${[[null,"–"],[1,"1°"],[2,"2°"],[3,"3°"],[4,"4°"]].map(([d,l])=>`<button class="dsel ${G.down===d?"on":""}" data-a="down" data-v="${d===null?"":d}">${l}</button>`).join("")}<button class="dnext" data-a="peask">PE</button>`}</div>
@@ -587,8 +638,8 @@ function draw(){
  <div class="sheet">${!m?'<p class="empty">Elegí un partido para empezar.</p>':G.pe==="?"?peSheet():sheet()}</div></div>
  <div class="plist" id="log"></div>
  ${UI.confirmClear?`<div class="confirm">¿Borrar las ${PLAYS.length} jugadas de este partido? <button class="btn no on" data-a="clearyes">Sí, vaciar</button><button class="btn ghost" data-a="clearask">No</button></div>`:""}
- ${UI.status&&UPK.includes(UI.statusKind)?`<div class="upback"></div><div class="upmodal ${UI.statusKind}" role="alertdialog" aria-live="assertive">${UI.statusKind==="wait"?'<div class="spin"></div><b>Subiendo…</b>':UI.statusKind==="ok"?'<div class="upic">✓</div><b>Partido subido</b>':'<div class="upic">!</div><b>No se subió</b>'}<p>${UI.status.replace(/^✓\s*/,"")}</p>${UI.statusKind==="wait"?"":'<button class="btn pri" data-a="stclose">Entendido</button>'}</div>`:""}
- <div class="actions">${UI.status&&!UPK.includes(UI.statusKind)?`<div class="status ${UI.statusKind}"><span>${UI.status}</span>${UI.statusKind==="wait"?"":'<button class="fx" data-a="stclose" aria-label="Cerrar aviso">✕</button>'}</div>`:""}<div class="tbar">${[["pase","Pase"],["corr","Corrida"],["sack","Sack"],["falta","Falta"]].map(([k,l])=>`<button class="btn${k==="falta"?" fl":""} ${J.tipo===k?"on":""}" data-a="tipo" data-v="${k}" ${m&&G.pe!=="?"?"":"disabled"}>${TICO[k]}<span>${l}</span></button>`).join("")}</div><div class="abtns"><div class="pmw"><button class="btn" data-a="pmenu" aria-label="Partido">${UI.abIco?ABI.gear:`Partido ${UI.pmenu?"▾":"▴"}`}</button>${UI.pmenu?`<div class="pmenu"><button data-a="matchpick">Elegir partido</button><button data-a="clearask" ${PLAYS.length?"":"disabled"}>Limpiar / vaciar</button><button data-a="export" ${PLAYS.length?"":"disabled"}>Exportar CSV</button><button data-a="finish" class="fin" ${PLAYS.length&&UI.edit===null?"":"disabled"}>Finalizar partido</button></div>`:""}</div><button class="btn ghost" data-a="${UI.edit!==null?"canceledit":"cancel"}" ${J.tipo||UI.edit!==null?"":"disabled"} aria-label="Cancelar">${UI.abIco?ABI.x:"Cancelar"}</button><button class="btn pri" data-a="save" ${m&&J.tipo&&G.pe!=="?"&&listo()?"":"disabled"} aria-label="Guardar">${UI.abIco?ABI.ok:UI.edit!==null?"Guardar cambios":"Guardar"}</button></div></div>`;
+ ${UI.status&&UPK.includes(UI.statusKind)?`<div class="upback"></div><div class="upmodal ${UI.statusKind}" role="alertdialog" aria-live="assertive">${UI.statusKind==="wait"?'<div class="spin"></div><b>'+(UI.stImp?"Trayendo…":"Subiendo…")+'</b>':UI.statusKind==="ok"?'<div class="upic">✓</div><b>'+(UI.stImp?"Jugadas traídas":"Partido subido")+'</b>':'<div class="upic">!</div><b>'+(UI.stImp?"No se pudo traer":"No se subió")+'</b>'}<p>${UI.status.replace(/^✓\s*/,"")}</p>${UI.statusKind==="wait"?"":'<button class="btn pri" data-a="stclose">Entendido</button>'}</div>`:""}
+ <div class="actions">${UI.status&&!UPK.includes(UI.statusKind)?`<div class="status ${UI.statusKind}"><span>${UI.status}</span>${UI.statusKind==="wait"?"":'<button class="fx" data-a="stclose" aria-label="Cerrar aviso">✕</button>'}</div>`:""}<div class="tbar">${[["pase","Pase"],["corr","Corrida"],["sack","Sack"],["falta","Falta"]].map(([k,l])=>`<button class="btn${k==="falta"?" fl":""} ${J.tipo===k?"on":""}" data-a="tipo" data-v="${k}" ${m&&G.pe!=="?"?"":"disabled"}>${TICO[k]}<span>${l}</span></button>`).join("")}</div><div class="abtns"><div class="pmw"><button class="btn" data-a="pmenu" aria-label="Partido">${UI.abIco?ABI.gear:`Partido ${UI.pmenu?"▾":"▴"}`}</button>${UI.pmenu?`<div class="pmenu"><button data-a="matchpick">Elegir partido</button><button data-a="impask">Traer jugadas de la planilla</button><button data-a="clearask" ${PLAYS.length?"":"disabled"}>Limpiar / vaciar</button><button data-a="export" ${PLAYS.length?"":"disabled"}>Exportar CSV</button><button data-a="finish" class="fin" ${PLAYS.length&&UI.edit===null?"":"disabled"}>Finalizar partido</button></div>`:""}</div><button class="btn ghost" data-a="${UI.edit!==null?"canceledit":"cancel"}" ${J.tipo||UI.edit!==null?"":"disabled"} aria-label="Cancelar">${UI.abIco?ABI.x:"Cancelar"}</button><button class="btn pri" data-a="save" ${m&&J.tipo&&G.pe!=="?"&&listo()?"":"disabled"} aria-label="Guardar">${UI.abIco?ABI.ok:UI.edit!==null?"Guardar cambios":"Guardar"}</button></div></div>`;
  document.getElementById("app").className="phone";
  if(UI.pick)document.getElementById("app").insertAdjacentHTML("beforeend",pickSheet());
  wireField();
@@ -641,7 +692,7 @@ const UPK=["wait","ok","err"];
 const ico=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ABI={gear:ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),x:ico('<path d="M6 6l12 12M18 6 6 18"/>'),ok:ico('<path d="M4.5 12.5l5 5L19.5 7"/>')};
 const TICO={pase:ico('<path d="M4 19C7 9 13 5.5 20 6"/><path d="M15.5 3.5 20 6l-2.4 4.5"/>'),corr:ico('<path d="M5 6l6 6-6 6M13 6l6 6-6 6"/>'),sack:ico('<circle cx="12" cy="12" r="8"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/>'),falta:ico('<path d="M5 21V4"/><path d="M5 4h11l-2.5 4 2.5 4H5"/>')};
-function setStatus(html,kind){UI.status=html;UI.statusKind=kind||"";draw();}
+function setStatus(html,kind,imp){UI.stImp=!!imp;UI.status=html;UI.statusKind=kind||"";draw();}
 function postJSON(url,body){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),90000);
  return fetch(url,{method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body),signal:ctl.signal}).then(r=>r.text()).finally(()=>clearTimeout(t));}
 async function finish(){
@@ -702,6 +753,9 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="clearyes"){PLAYS=[];G=G0();J=J0();UI.adj=null;UI.confirmClear=false;UI.status="";UI.t=UI.dur;UI.per="1T";UI.match.uploaded=false;persist();draw();return;}
  if(a==="export"){const {off,def}=buildRows();dl("Off",SC()?SOFF_HDR:OFF_HDR,off);setTimeout(()=>dl("Def",SC()?SDEF_HDR:DEF_HDR,def),300);UI.status=`⤓ Se descargaron ${esc(UI.match.id)}-Off.csv y ${esc(UI.match.id)}-Def.csv.`;UI.statusKind="";}
  if(a==="stclose"){UI.status="";draw();return;}
+ if(a==="impask"){if(PLAYS.length){UI.impAsk=true;draw();return;}importPlays();return;}
+ if(a==="impyes"){UI.impAsk=false;importPlays();return;}
+ if(a==="impno"){UI.impAsk=false;draw();return;}
  if(a==="finish"){finish().catch(e=>setStatus("No se subió: error en el anotador ("+esc(e&&e.message||e)+"). Las jugadas siguen guardadas en este celular.","err"));return;}
  if(a==="matchpick"){UI.matchOpen=true;draw();window.scrollTo({top:0,behavior:"smooth"});return;}
  if(a==="matchclose")UI.matchOpen=false;
