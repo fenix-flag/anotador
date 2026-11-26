@@ -182,6 +182,9 @@ select.msel{width:100%;min-height:44px;background:var(--panel-2);color:var(--ink
 .bsheet{width:min(480px,100vw)!important}
 .mitem:disabled{opacity:.45}
 .empty{color:var(--dim);font-size:13px}
+.dnote textarea{width:100%;margin-top:8px;background:var(--bg);color:var(--ink);border:1px solid var(--line-2);border-radius:6px;padding:8px 10px;font:500 14px var(--fb,inherit);resize:vertical;box-sizing:border-box}
+.dnt{margin-top:6px;font-size:13px;color:var(--ink);background:rgba(96,165,250,.1);border-left:3px solid #60A5FA;padding:6px 8px;border-radius:4px;white-space:pre-wrap;text-align:left}
+.mitem{flex-wrap:wrap}.dnl{flex-basis:100%;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
 </style></head><body>
 <div class="phone" id="app"></div>
 <script>
@@ -317,7 +320,7 @@ function apply(g,j){
      if(j.res==="C"){r.pasador=j.pas;r.receptor=j.rec;r["yd de pase"]=gn??"";r["yd ganadas recep"]=gn??"";if(j.am){r["amague jg"]=j.rec;r.amagues=j.am;}if(td){r["td jugador"]=j.rec;r["asistencia td"]=j.pas;}}
      if(j.res==="I")r["pas inc"]=j.pas;
      if(j.res==="D"){r.drop=j.rec;r["pas inc"]=j.pas;}
-     if(j.res==="X"){r.intercep=j.pas;r["pas inc"]=j.pas;}}
+     if(j.res==="X"){r.intercep=j.pas;r["pas inc"]=j.pas;if(j.dpx)r.drop=j.dpx;}}
     if(j.res==="X"&&(j.dsvR||j.dsv))r.desvio="si";
     if(pk)r[pe?"pick 2 rival":"pick 6 rival"]=1;}
    if(j.tipo==="corr"){
@@ -357,7 +360,7 @@ function apply(g,j){
    else def.push(Object.assign(fmini(x),x.q==="F"?{"faltas realizadas":x.j}:{"faltas recibidas":x.j}));});}
  // texto del listado
  const nmF=sc?scA():"Fenix",nmR=sc?scB():"rival",atkNm=o?scA():scB();
- let txt=j.tipo==="pase"?(j.res==="C"?(o||sc?(j.pas||j.rec?`#${j.pas||"?"} → #${j.rec||"?"}`:"Pase "+(sc?atkNm:"")):"Pase rival")+(gn==null?" completo":` ${gn} yd`):j.res==="X"?`Intercepción${(!o||sc)&&j.def?" #"+j.def:""}${j.dsv?" (desvío #"+j.dsv+")":j.dsvR?" (con desvío)":""}`:j.res==="D"?`Drop #${j.rec}`:j.res==="F"?`Desvío #${j.def}`+(dsvC(j)?` · siguió${gn==null?"":" "+gn+" yd"}`:"")+(j.flg&&!td?` · flag #${j.flg}`:""):"Incompleto"):j.tipo==="falta"?(j.fq==="A"?"Faltas de ambos":`Falta ${j.fq==="F"?nmF+(j.fj?" #"+j.fj:""):nmR+(sc&&j.fj?" #"+j.fj:"")}${j.ft?" · "+j.ft:""}${fxList(j).length?" + "+fxList(j).length+" más"+(compA(j)?" (compensadas)":""):""}`):j.tipo==="corr"?`Corrida ${o||sc?(j.cor?"#"+j.cor:atkNm):"rival"}${gn==null?"":" "+gn+" yd"}`:`Sack${(o||sc)&&j.pas?" a #"+j.pas:(!o||sc)&&j.def?" por #"+j.def:""}${gn==null?"":" "+gn+" yd"}`;
+ let txt=j.tipo==="pase"?(j.res==="C"?(o||sc?(j.pas||j.rec?`#${j.pas||"?"} → #${j.rec||"?"}`:"Pase "+(sc?atkNm:"")):"Pase rival")+(gn==null?" completo":` ${gn} yd`):j.res==="X"?`Intercepción${(!o||sc)&&j.def?" #"+j.def:""}${j.dsv?" (desvío #"+j.dsv+")":j.dsvR?" (con desvío)":""}${j.dpx?" · drop #"+j.dpx:""}`:j.res==="D"?`Drop #${j.rec}`:j.res==="F"?`Desvío #${j.def}`+(dsvC(j)?` · siguió${gn==null?"":" "+gn+" yd"}`:"")+(j.flg&&!td?` · flag #${j.flg}`:""):"Incompleto"):j.tipo==="falta"?(j.fq==="A"?"Faltas de ambos":`Falta ${j.fq==="F"?nmF+(j.fj?" #"+j.fj:""):nmR+(sc&&j.fj?" #"+j.fj:"")}${j.ft?" · "+j.ft:""}${fxList(j).length?" + "+fxList(j).length+" más"+(compA(j)?" (compensadas)":""):""}`):j.tipo==="corr"?`Corrida ${o||sc?(j.cor?"#"+j.cor:atkNm):"rival"}${gn==null?"":" "+gn+" yd"}`:`Sack${(o||sc)&&j.pas?" a #"+j.pas:(!o||sc)&&j.def?" por #"+j.def:""}${gn==null?"":" "+gn+" yd"}`;
  if((!o||sc)&&!an&&!td&&j.def&&(j.tipo==="corr"||(j.tipo==="pase"&&j.res==="C")))txt=`Flag #${j.def} · ${j.tipo==="corr"?"corrida":"pase"}${gn==null?"":" "+gn+" yd"}`;
  if(j.pf)txt+=compA(j)?" + faltas de ambos":` + falta ${j.fq==="F"?nmF:nmR}${an?" (aceptada)":" (declinada)"}`;
  const rfl2=j.rfl!=null?j.rfl:(sc?null:j.def),rfe2=j.rfe&&j.rfe.length?j.rfe:(sc?[]:(j.fe||[]));
@@ -385,14 +388,18 @@ function push(j,adj){const pre=clone(G);const res=apply(G,clone(j));PLAYS.push({
 function rebuild(list,pend){G=G0();PLAYS=[];list.forEach(p=>{applyAdj(G,p.adj);push(p.inp,p.adj);});UI.adj=pend||null;if(pend)applyAdj(G,pend);}
 function savePlay(){
  if(!J.tt)J.tt=UI.per+" "+fmt(UI.dur-UI.t);
- if(UI.edit!==null){const i=UI.edit,rest=PLAYS.slice(i+1),adj=PLAYS[i].adj;PLAYS=PLAYS.slice(0,i);
+ if(UI.ins!=null){const i=UI.ins,rest=PLAYS.slice(i).map(p=>({inp:p.inp,adj:p.adj})),adjI=rest[0]?rest[0].adj:null;PLAYS=PLAYS.slice(0,i);
+  G=clone(PLAYS[i-1]?PLAYS[i-1].post:G0());if(adjI)applyAdj(G,adjI);push(J,adjI);if(rest[0])rest[0].adj=null;
+  rest.forEach(p=>{applyAdj(G,p.adj);push(p.inp,p.adj);});
+  const pend=UI.saved&&UI.saved.adj;UI.ins=null;UI.saved=null;UI.adj=pend||null;if(pend)applyAdj(G,pend);}
+ else if(UI.edit!==null){const i=UI.edit,rest=PLAYS.slice(i+1),adj=PLAYS[i].adj;PLAYS=PLAYS.slice(0,i);
   G=clone(PLAYS[i-1]?PLAYS[i-1].post:G0());applyAdj(G,adj);push(J,adj);
   rest.forEach(p=>{applyAdj(G,p.adj);push(p.inp,p.adj);});
   const pend=UI.saved&&UI.saved.adj;UI.edit=null;UI.saved=null;UI.adj=pend||null;if(pend)applyAdj(G,pend);}
  else{["pas","rec","cor","def","fj"].forEach(k=>{if(J[k]){FREQ[k]=FREQ[k]||{};FREQ[k][J[k]]=(FREQ[k][J[k]]||0)+1;}});
   UI.lastTipo=J.tipo==="corr"?"corr":"pase";const wasO=G.side==="o"&&!SC();push(J,UI.adj);UI.adj=null;
   if(wasO){if(J.tipo==="pase"||J.tipo==="sack"){UI.lastPas=J.pas;if(J.rec)UI.lastRec=J.rec;}if(J.tipo==="corr"&&J.cor)UI.lastCor=J.cor;}}
- UI.status="";J=J0();UI.pan=0;persist();draw();}
+ UI.status="";J=J0();UI.pan=0;persist();draw();if(PLAYS.length&&PLAYS.length%5===0&&navigator.onLine!==false)draftSave(true);}
 function delPlay(i){const d=PLAYS[i],rest=PLAYS.slice(i+1);PLAYS=PLAYS.slice(0,i);G=clone(PLAYS[i-1]?PLAYS[i-1].post:G0());
  if(rest.length)rest[0].adj=Object.assign({},d.adj||{},rest[0].adj||{});else UI.adj=Object.assign({},d.adj||{},UI.adj||{});
  rest.forEach(p=>{applyAdj(G,p.adj);push(p.inp,p.adj);});if(UI.adj&&Object.keys(UI.adj).length)applyAdj(G,UI.adj);persist();draw();}
@@ -400,10 +407,11 @@ function delPlay(i){const d=PLAYS[i],rest=PLAYS.slice(i+1);PLAYS=PLAYS.slice(0,i
 /* ---------------- guardado local ---------------- */
 const keyFor=(id,scout)=>`fenixAnot3_${gender}_${scout?"SCOUT":season}_${id}`;
 const matchKey=m=>keyFor(m.id,!!m.scout);
-function persist(){if(!UI.match)return;LS.set(matchKey(UI.match),{plays:PLAYS.map(p=>({inp:p.inp,adj:p.adj})),pend:UI.adj,t:UI.t,per:UI.per,dur:UI.dur,last:{pas:UI.lastPas,rec:UI.lastRec,cor:UI.lastCor},freq:FREQ,rival:UI.match.rival,fecha:UI.match.fecha,uploaded:UI.match.uploaded||false});
+function stateObj(){return {plays:PLAYS.map(p=>({inp:p.inp,adj:p.adj})),pend:UI.adj,t:UI.t,per:UI.per,dur:UI.dur,last:{pas:UI.lastPas,rec:UI.lastRec,cor:UI.lastCor},freq:FREQ,rival:UI.match.rival,fecha:UI.match.fecha,uploaded:UI.match.uploaded||false};}
+function persist(){if(!UI.match)return;LS.set(matchKey(UI.match),stateObj());
  LS.set("fenixAnot3_cur_"+gender,{season,match:UI.match});}
 function loadMatch(m){UI.match=m;const st=LS.get(matchKey(m),null);
- UI.run=false;clearInterval(tm);UI.edit=null;UI.saved=null;UI.status="";UI.pick=null;
+ UI.run=false;clearInterval(tm);UI.edit=null;UI.ins=null;UI.saved=null;UI.status="";UI.pick=null;
  if(st){UI.t=st.t??20*60;UI.per=st.per||"1T";UI.dur=st.dur||20*60;UI.lastPas=st.last&&st.last.pas||null;UI.lastRec=st.last&&st.last.rec||null;UI.lastCor=st.last&&st.last.cor||null;FREQ=st.freq||{};m.uploaded=st.uploaded||m.uploaded;rebuild(st.plays||[],st.pend||null);}
  else{UI.t=UI.dur;UI.per="1T";UI.lastPas=null;UI.lastRec=null;UI.lastCor=null;FREQ={};G=G0();PLAYS=[];UI.adj=null;}
  J=J0();persist();}
@@ -434,6 +442,7 @@ async function importPlays(){const m=UI.match;if(!m)return;const sc=!!m.scout,si
    inp.pas=v(O,"pasador")||v(O,"pas inc")||v(O,"pasador pe fallado")||v(O,"asist p ext")||(tipo==="sack"?v(O,"sack"):"")||null;
    inp.rec=(ps?(v(O,"receptor")||v(O,"drop")||v(O,"jugador pe fallado")||v(O,"jugador p ext")):"")||null;
    inp.cor=(cr?(v(O,"corredor")||v(O,"jugador p ext")||v(O,"jugador pe fallado")):"")||null;
+   if(inp.res==="X"&&v(O,"drop")){inp.dpx=v(O,"drop");inp.rec=null;}
    inp.am=+v(O,"amagues")||0;if(v(O,"pick 6 rival")||v(O,"pick 2 rival"))inp.pick=true;if(v(O,"desvio")==="si")inp.dsvR=true;}
   if(D){inp.def=v(D,"flag capturado")||v(D,"pase desviado")||v(D,"intercepcion")||v(D,"sacks")||null;
    if(tipo==="pase"&&v(D,"resultado")==="F"){inp.res="F";inp.def=v(D,"pase desviado")||null;inp.flg=v(D,"flag capturado")||null;inp.fc=(num(v(D,"yd rival"))||0)!==0||!!v(D,"fin x,y")||!!v(D,"td rival");}if(!O)inp.am=+v(D,"amagues")||0;if(v(D,"pick 6")||v(D,"pick 2"))inp.pick=true;}
@@ -553,7 +562,7 @@ function MULTI(lbl,key,list,d,team){PICKS[key]={lbl,list,d,multi:true,team};cons
 const addNumRow=P=>P.team?`<div class="addnum"><input id="newNum" type="number" inputmode="numeric" placeholder="Nuevo # de ${esc(P.team)}"><button class="btn" data-a="addnum" data-k="${UI.pick}">Agregar</button></div>`:"";
 function pickSheet(){const P=PICKS[UI.pick];if(!P)return "";
  if(P.multi){const cur=J[UI.pick]||[];return `<div class="bsback" data-a="pickclose"></div><div class="bsheet"><div class="bsh"><span>${P.lbl}</span><button class="fx" data-a="pickclose">Listo</button></div><div class="bsgrid">${P.list.length?P.list.map(([n,nm])=>`<button class="bst${P.d?" d":""} ${cur.includes(n)?"on":""}" data-a="pickmulti" data-k="${UI.pick}" data-v="${n}"><b>${n}</b><span>${esc(nm)}</span></button>`).join(""):'<p class="empty" style="grid-column:1/-1">${P.team?"Todavía no hay números de este equipo: agregalos abajo.":"No hay plantel cargado para este torneo."}</p>'}</div>${addNumRow(P)}<div class="bsfoot"><button class="btn ghost" data-a="pickclear" data-k="${UI.pick}" ${cur.length?"":"disabled"}>Ninguno</button><button class="btn pri" data-a="pickclose">Listo${cur.length?" ("+cur.length+")":""}</button></div></div>`;}
- return `<div class="bsback" data-a="pickclose"></div><div class="bsheet"><div class="bsh"><span>${P.lbl}</span><button class="fx" data-a="pickclose">Cerrar</button></div><div class="bsgrid">${P.list.length?P.list.map(([n,nm])=>`<button class="bst${P.d?" d":""} ${J[UI.pick]===n?"on":""}" data-a="pickset" data-k="${UI.pick}" data-v="${n}"><b>${n}</b><span>${esc(nm)}</span></button>`).join(""):'<p class="empty" style="grid-column:1/-1">${P.team?"Todavía no hay números de este equipo: agregalos abajo.":"No hay plantel cargado para este torneo."}</p>'}</div>${addNumRow(P)}${P.team&&J[UI.pick]?`<div class="bsfoot"><button class="btn ghost" data-a="pickset" data-k="${UI.pick}" data-v="">Sin número</button></div>`:""}</div>`;}
+ return `<div class="bsback" data-a="pickclose"></div><div class="bsheet"><div class="bsh"><span>${P.lbl}</span><button class="fx" data-a="pickclose">Cerrar</button></div><div class="bsgrid">${P.list.length?P.list.map(([n,nm])=>`<button class="bst${P.d?" d":""} ${J[UI.pick]===n?"on":""}" data-a="pickset" data-k="${UI.pick}" data-v="${n}"><b>${n}</b><span>${esc(nm)}</span></button>`).join(""):'<p class="empty" style="grid-column:1/-1">${P.team?"Todavía no hay números de este equipo: agregalos abajo.":"No hay plantel cargado para este torneo."}</p>'}</div>${addNumRow(P)}${(P.team||P.opt)&&J[UI.pick]?`<div class="bsfoot"><button class="btn ghost" data-a="pickset" data-k="${UI.pick}" data-v="">${P.opt?"Nadie":"Sin número"}</button></div>`:""}</div>`;}
 const teamLogo=(name,cls,ab)=>{const l=name==="Fenix"?LOGO:(LOGOS[nkey(name)]||BIBLOGO[nkey(name)]);return `<span class="lg ${cls}">${l?`<img src="${esc(l)}" alt="" onerror="this.remove()">`:""}<em>${ab}</em></span>`;};
 function scoreHTML(){const sc=SC(),A=scA(),abA=sc?A.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ]/g,"").slice(0,3).toUpperCase():"FNX",riv=sc?scB():rivalName(),ab=riv.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ]/g,"").slice(0,3).toUpperCase()||"RIV",pp=`<button class="pp" data-a="clk" aria-label="${UI.run?"Pausar":"Iniciar"} reloj">${UI.run?"❚❚":"▶"}</button>`;
  return `<div class="sb-tv"><div class="tm f">${teamLogo(A,"f",abA)}<span class="nm">${esc(A)}</span><b>${G.sc.f}</b></div>
@@ -585,7 +594,7 @@ function sheet(){
   const R=o?[["I","Incomp.","no"],["D","Drop","no"],["X","Intercep.","ix"]]:[["I","Incomp.","no"],["F","Desviado","no"],["X","Intercep.","ix"]];
   const rb=([k,l,c])=>`<button class="btn ${c} ${J.res===k?"on":""}" data-a="set" data-k="res" data-v="${k}">${l}</button>`;
   h+=`<div class="lab">Resultado</div><div class="row r4">${[["C","Completo","ok"]].concat(R).map(rb).join("")}</div>`;
-  if(o){h+=NUMS("Pasa"+(sc?" (opcional)":""),"pas",PL,false,AT);if(J.res!=="X")h+=NUMS("Receptor"+(sc?" (opcional)":""),"rec",OL.filter(x=>x[0]!==J.pas),false,AT);if(J.res==="C"){h+=ydc();h+=amg("Amagues del receptor");}
+  if(o){h+=NUMS("Pasa"+(sc?" (opcional)":""),"pas",PL,false,AT);if(J.res==="X"&&!sc){h+=NUMS("Se le cayó a (drop · opcional)","dpx",OL.filter(x=>x[0]!==J.pas),false,AT);PICKS.dpx.opt=true;}if(J.res!=="X")h+=NUMS("Receptor"+(sc?" (opcional)":""),"rec",OL.filter(x=>x[0]!==J.pas),false,AT);if(J.res==="C"){h+=ydc();h+=amg("Amagues del receptor");}
    if(sc){if(J.res==="I")h+=NUMS("Quién desvió (opcional)","def",DL,true,DT);if(J.res==="X"){h+=NUMS("Quién interceptó (opcional)","def",DL,true,DT);h+=amg("Amagues en la devolución");}if(J.res==="C")h+=flagsDef({list:DL,team:DT,capt:!isTD(J,G)});}}
   else{
    if(J.res==="F"||J.res==="X")h+=NUMS(J.res==="F"?"Quién desvió":"Quién interceptó","def",MIO,true);
@@ -626,7 +635,7 @@ function sheet(){
  return h;}
 function peSheet(){return `<div class="lab">Punto extra</div><div class="row"><button class="btn" data-a="pe" data-v="1">x1 · 5 yd</button><button class="btn" data-a="pe" data-v="2">x2 · 10 yd</button></div><div class="row"><button class="btn ghost" data-a="peoff">Sin punto extra</button></div>`;}
 function matchPanel(){const seasons=seasonsForGender(),scm=UI.mmode==="scout";
- const list=scm?OTHERGAMES.map(g=>{const id=scoutGameId(g),pend=pendingCount(id,true),up=uploadedFlag(id,true);return `<button class="mitem ${UI.match&&UI.match.id===id?"on":""}" data-a="spick" data-v="${esc(g.id)}" ${g.id?"":"disabled"}><span class="mid">${esc(g.id||"sin ID")}</span><span>${esc(g.fecha?g.fecha+" · ":"")}${esc(g.a)} vs ${esc(g.b)}</span>${pend&&!up?`<span class="pend">${pend} sin subir</span>`:up?'<span class="ok">✓ subido</span>':""}</button>`;}).join(""):FIXGAMES.map(g=>{const pend=pendingCount(g.id),up=uploadedFlag(g.id)||g.hasData;return `<button class="mitem ${UI.match&&UI.match.id===g.id?"on":""}" data-a="mpick" data-v="${esc(g.id)}" ${g.id?"":"disabled"}><span class="mid">${esc(g.id||"sin ID")}</span><span>${esc(g.fecha?g.fecha+" · ":"")}vs ${esc(g.rival)}</span>${pend&&!uploadedFlag(g.id)?`<span class="pend">${pend} sin subir</span>`:up?'<span class="ok">✓ subido</span>':""}</button>`;}).join("");
+ const list=scm?OTHERGAMES.map(g=>{const id=scoutGameId(g),pend=pendingCount(id,true),up=uploadedFlag(id,true);return `<button class="mitem ${UI.match&&UI.match.id===id?"on":""}" data-a="spick" data-v="${esc(g.id)}" ${g.id?"":"disabled"}><span class="mid">${esc(g.id||"sin ID")}</span><span>${esc(g.fecha?g.fecha+" · ":"")}${esc(g.a)} vs ${esc(g.b)}</span>${pend&&!up?`<span class="pend">${pend} sin subir</span>`:up?'<span class="ok">✓ subido</span>':""}</button>`;}).join(""):FIXGAMES.map(g=>{const pend=pendingCount(g.id),up=uploadedFlag(g.id)||g.hasData,dr=DRAFTS["F|"+g.id];return `<button class="mitem ${UI.match&&UI.match.id===g.id?"on":""}" data-a="mpick" data-v="${esc(g.id)}" ${g.id?"":"disabled"}><span class="mid">${esc(g.id||"sin ID")}</span><span>${esc(g.fecha?g.fecha+" · ":"")}vs ${esc(g.rival)}</span>${pend&&!uploadedFlag(g.id)?`<span class="pend">${pend} sin subir</span>`:up?'<span class="ok">✓ subido</span>':""}${dr&&!up&&dr.n>pend?`<span class="pend" style="border-color:#60A5FA;color:#60A5FA">☁ borrador ${dr.n}</span>`:""}${dr&&!up&&dr.note?`<span class="dnl">📝 ${esc(dr.note)}</span>`:""}</button>`;}).join("");
  return `<div class="mpanel" id="mpanel"><div class="mphd"><span>Elegir partido</span>${UI.match?'<button class="fx" data-a="matchclose">Cerrar</button>':""}</div><div class="mtabs">${[["fenix","Fenix"],["scout","Scouting"]].map(([k,l])=>`<button class="dsel ${UI.mmode===k?"on":""}" data-a="mmode" data-v="${k}" style="font-size:14px;letter-spacing:.06em;text-transform:uppercase">${l}</button>`).join("")}</div><div class="row" style="margin:0 0 8px">${[["m","Masculino"],["f","Femenino"]].map(([g,l])=>`<button class="dsel ${gender===g?"on":""}" data-a="gen" data-v="${g}" style="font-size:14px;letter-spacing:.06em;text-transform:uppercase">${l}</button>`).join("")}</div>
  ${!seasons.length&&LOADING?'<p class="empty">Cargando torneos…</p>':''}${seasons.length?`<select class="msel" id="tSel">${seasons.map(s=>`<option value="${esc(s)}" ${s===season?"selected":""}>${esc(s)}${!/amistos/i.test(s)&&(INDEX||[]).some(r=>r.temporada===s&&/amistos/i.test(r.tipo))?" · amistosos":""}</option>`).join("")}${!scm&&!amistososSeason()?'<option value="__ami">Amistoso (falta crear el torneo)</option>':""}</select>`:""}
  <div class="mlist">${list||(!scm&&!LOADING&&isAmistosoSeason()?'<p class="empty">Todavía no hay amistosos cargados. Creá uno abajo.</p>':scm&&!LOADING?'<p class="empty">No hay partidos de otros equipos en este fixture. Cargalo a mano abajo.</p>':LOADING?'<p class="empty">Cargando partidos del fixture…</p>':'<p class="empty">No pude leer el fixture (¿sin señal o vacío?). Cargá el partido a mano abajo.</p>')}</div>
@@ -644,8 +653,11 @@ function draw(){
  ${UI.clkEdit?`<div class="clkedit"><div class="row" style="margin:0">${["1T","2T","Extra"].map(x=>`<button class="dsel ${UI.per===x?"on":""}" data-a="per" data-v="${x}">${x}</button>`).join("")}</div>
   <div class="mmss"><div class="tf"><button class="dsel" data-a="tadj" data-v="-60">−</button><input class="tin" data-t="m" type="number" inputmode="numeric" value="${String(Math.floor(UI.t/60)).padStart(2,"0")}" aria-label="Minutos"><button class="dsel" data-a="tadj" data-v="60">+</button></div><b class="colon">:</b><div class="tf"><button class="dsel" data-a="tadj" data-v="-1">−</button><input class="tin" data-t="s" type="number" inputmode="numeric" value="${String(UI.t%60).padStart(2,"0")}" aria-label="Segundos"><button class="dsel" data-a="tadj" data-v="1">+</button></div></div>
   <div class="row" style="margin:10px 0 0;justify-content:space-between;align-items:center"><span style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px">Duración del tiempo <button class="dsel" style="flex:none;width:34px" data-a="dur" data-v="-1">−</button><b style="color:var(--ink)">${UI.dur/60}′</b><button class="dsel" style="flex:none;width:34px" data-a="dur" data-v="1">+</button></span><button class="btn pri" style="flex:none;min-height:36px;padding:0 16px" data-a="clkedit">Listo</button></div></div>`:""}
- ${UI.edit!==null?`<div class="editbar">Editando la jugada ${UI.edit+1}<button class="fx" data-a="canceledit">Cancelar edición</button></div>`:""}
+ ${UI.edit!==null?`<div class="editbar">Editando la jugada ${UI.edit+1}<button class="fx" data-a="canceledit">Cancelar edición</button></div>`:""}${UI.ins!=null?`<div class="editbar">Agregando una jugada antes de la ${UI.ins+1} · ${esc(PLAYS[UI.ins]?PLAYS[UI.ins].log.d:"")} ${esc(PLAYS[UI.ins]?PLAYS[UI.ins].log.txt:"")}<button class="fx" data-a="canceledit">Cancelar</button></div>`:""}
  ${m&&!PLAYS.length&&!UI.impAsk&&(m.uploaded||(FIXGAMES.find(g=>g.id===m.id)||{}).hasData)?`<div class="perask"><span class="dk">Este partido ya tiene jugadas en la planilla</span><div class="row" style="margin:6px 0 0"><button class="btn" data-a="impask">Traer jugadas para editarlas</button></div></div>`:""}
+ ${UI.noteAsk&&m?`<div class="perask dnote"><span class="dk">☁ Guardar borrador · ${PLAYS.length} jugadas</span><textarea id="dNote" maxlength="500" rows="3" placeholder="Nota (opcional): ej. falta cargar del min 12 al 15 del 2T, revisar el drive 6…">${esc((draftOf(m)||{}).note||"")}</textarea><div class="row" style="margin:6px 0 0"><button class="btn pri" data-a="dsaveok">Guardar borrador</button><button class="btn ghost" data-a="dsaveno">Cancelar</button></div></div>`:""}
+ ${UI.draftAsk?`<div class="confirm">¿Reemplazar las ${PLAYS.length} jugadas de este celular por el borrador de la nube${draftOf(m)?` (${draftOf(m).n} jugadas · ${esc(fmtWhen(draftOf(m).savedAt))})`:""}?${draftOf(m)&&draftOf(m).note?`<div class="dnt">📝 ${esc(draftOf(m).note)}</div>`:""} <button class="btn no on" data-a="dload">Sí, traer</button><button class="btn ghost" data-a="dno">No</button></div>`:""}
+ ${m&&draftOf(m)&&draftOf(m).n>PLAYS.length&&!UI.draftAsk?`<div class="perask"><span class="dk">☁ Hay un borrador en la nube con ${draftOf(m).n} jugadas (${esc(fmtWhen(draftOf(m).savedAt))})</span>${draftOf(m).note?`<div class="dnt">📝 ${esc(draftOf(m).note)}</div>`:""}<div class="row" style="margin:6px 0 0"><button class="btn" data-a="dload">Continuar borrador</button></div></div>`:""}
  ${UI.impAsk?`<div class="confirm">¿Reemplazar las ${PLAYS.length} jugadas de este celular por las de la planilla? <button class="btn no on" data-a="impyes">Sí, traer</button><button class="btn ghost" data-a="impno">No</button></div>`:""}
  ${UI.perAsk&&m?`<div class="perask"><span class="dk">Arranca ${esc(UI.perAsk)} · ¿quién ataca?</span><div class="row" style="margin:6px 0 0"><button class="btn" data-a="perside" data-v="o">${SC()?"Ataca "+esc(scA()):"Ataca Fenix"}</button><button class="btn" data-a="perside" data-v="d">${SC()?"Ataca "+esc(scB()):"Ataca "+esc(rivalName())}</button></div><div class="pmsg">Empieza un drive nuevo desde la 5 con 1° down, aunque le vuelva a tocar al mismo equipo.</div></div>`:""}
  <div class="sit"><div class="side full"><span class="o ${G.side==="o"?"on":""}" data-a="side" data-v="o">${SC()?"Ataca "+esc(scA()):"Ofensiva"}</span><span class="d ${G.side==="d"?"on":""}" data-a="side" data-v="d">${SC()?"Ataca "+esc(scB()):"Defensiva"}</span></div></div>
@@ -660,14 +672,14 @@ function draw(){
  <div class="plist" id="log"></div>
  ${UI.confirmClear?`<div class="confirm">¿Borrar las ${PLAYS.length} jugadas de este partido? <button class="btn no on" data-a="clearyes">Sí, vaciar</button><button class="btn ghost" data-a="clearask">No</button></div>`:""}
  ${UI.status&&UPK.includes(UI.statusKind)?`<div class="upback"></div><div class="upmodal ${UI.statusKind}" role="alertdialog" aria-live="assertive">${UI.statusKind==="wait"?'<div class="spin"></div><b>'+(UI.stImp?"Trayendo…":"Subiendo…")+'</b>':UI.statusKind==="ok"?'<div class="upic">✓</div><b>'+(UI.stImp?"Jugadas traídas":"Partido subido")+'</b>':'<div class="upic">!</div><b>'+(UI.stImp?"No se pudo traer":"No se subió")+'</b>'}<p>${UI.status.replace(/^✓\s*/,"")}</p>${UI.statusKind==="wait"?"":'<button class="btn pri" data-a="stclose">Entendido</button>'}</div>`:""}
- <div class="actions">${UI.status&&!UPK.includes(UI.statusKind)?`<div class="status ${UI.statusKind}"><span>${UI.status}</span>${UI.statusKind==="wait"?"":'<button class="fx" data-a="stclose" aria-label="Cerrar aviso">✕</button>'}</div>`:""}<div class="tbar">${[["pase","Pase"],["corr","Corrida"],["sack","Sack"],["falta","Falta"]].map(([k,l])=>`<button class="btn${k==="falta"?" fl":""} ${J.tipo===k?"on":""}" data-a="tipo" data-v="${k}" ${m&&G.pe!=="?"?"":"disabled"}>${TICO[k]}<span>${l}</span></button>`).join("")}</div><div class="abtns"><div class="pmw"><button class="btn" data-a="pmenu" aria-label="Partido">${UI.abIco?ABI.gear:`Partido ${UI.pmenu?"▾":"▴"}`}</button>${UI.pmenu?`<div class="pmenu"><button data-a="matchpick">Elegir partido</button><button data-a="impask">Traer jugadas de la planilla</button><button data-a="clearask" ${PLAYS.length?"":"disabled"}>Limpiar / vaciar</button><button data-a="export" ${PLAYS.length?"":"disabled"}>Exportar CSV</button><button data-a="finish" class="fin" ${PLAYS.length&&UI.edit===null?"":"disabled"}>Finalizar partido</button></div>`:""}</div><button class="btn ghost" data-a="${UI.edit!==null?"canceledit":"cancel"}" ${J.tipo||UI.edit!==null?"":"disabled"} aria-label="Cancelar">${UI.abIco?ABI.x:"Cancelar"}</button><button class="btn pri" data-a="save" ${m&&J.tipo&&G.pe!=="?"&&listo()?"":"disabled"} aria-label="Guardar">${UI.abIco?ABI.ok:UI.edit!==null?"Guardar cambios":"Guardar"}</button></div></div>`;
+ <div class="actions">${UI.status&&!UPK.includes(UI.statusKind)?`<div class="status ${UI.statusKind}"><span>${UI.status}</span>${UI.statusKind==="wait"?"":'<button class="fx" data-a="stclose" aria-label="Cerrar aviso">✕</button>'}</div>`:""}<div class="tbar">${[["pase","Pase"],["corr","Corrida"],["sack","Sack"],["falta","Falta"]].map(([k,l])=>`<button class="btn${k==="falta"?" fl":""} ${J.tipo===k?"on":""}" data-a="tipo" data-v="${k}" ${m&&G.pe!=="?"?"":"disabled"}>${TICO[k]}<span>${l}</span></button>`).join("")}</div><div class="abtns"><div class="pmw"><button class="btn" data-a="pmenu" aria-label="Partido">${UI.abIco?ABI.gear:`Partido ${UI.pmenu?"▾":"▴"}`}</button>${UI.pmenu?`<div class="pmenu"><button data-a="matchpick">Elegir partido</button><button data-a="dsave" ${PLAYS.length?"":"disabled"}>☁ Guardar borrador</button><button data-a="dload">☁ Traer borrador${draftOf(m)?` (${draftOf(m).n})`:""}</button><button data-a="impask">Traer jugadas de la planilla</button><button data-a="clearask" ${PLAYS.length?"":"disabled"}>Limpiar / vaciar</button><button data-a="export" ${PLAYS.length?"":"disabled"}>Exportar CSV</button><button data-a="finish" class="fin" ${PLAYS.length&&UI.edit===null&&UI.ins==null?"":"disabled"}>Finalizar partido</button></div>`:""}</div><button class="btn ghost" data-a="${UI.edit!==null||UI.ins!=null?"canceledit":"cancel"}" ${J.tipo||UI.ins!=null||UI.edit!==null?"":"disabled"} aria-label="Cancelar">${UI.abIco?ABI.x:"Cancelar"}</button><button class="btn pri" data-a="save" ${m&&J.tipo&&G.pe!=="?"&&listo()?"":"disabled"} aria-label="Guardar">${UI.abIco?ABI.ok:UI.edit!==null?"Guardar cambios":UI.ins!=null?"Agregar":"Guardar"}</button></div></div>`;
  document.getElementById("app").className="phone";
  if(UI.pick)document.getElementById("app").insertAdjacentHTML("beforeend",pickSheet());
  wireField();
  const ts=document.getElementById("tSel");if(ts)ts.onchange=()=>{if(ts.value==="__ami"){UI.mmsg=`No hay un torneo de amistosos para ${gender==="f"?"Femenino":"Masculino"}. Crealo desde el Panel (Nuevo torneo → tipo <b>Amistosos</b>) y aparece acá.`;ts.value=season;draw();return;}UI.mmsg="";selectSeason(ts.value);};
  renderLog();}
 function renderLog(){
- const row=(p,i)=>{const l=p.log;return `<div style="border-left:3px solid ${l.o?"var(--accent)":"var(--def)"}${UI.edit===i?";outline:1px solid var(--accent)":""}"><i>${l.d}</i><span class="lt">${esc(l.txt)}</span>${l.tag?`<span class="tag" style="color:${l.tc};border:1px solid ${l.tc}">${l.tag}</span>`:'<span class="tag" style="border:0"></span>'}<span class="la">${UI.edit===null?`<button class="fx" data-a="edit" data-i="${i}">Editar</button><button class="del ${UI.delAsk===i?"sure":""}" data-a="del" data-i="${i}" aria-label="Borrar jugada">${UI.delAsk===i?"¿Borrar?":"✕"}</button>`:UI.edit===i?'<span class="fx" style="text-decoration:none;color:var(--accent-ink)">editando</span>':""}</span></div>`;};
+ const row=(p,i)=>{const l=p.log;return `<div style="border-left:3px solid ${l.o?"var(--accent)":"var(--def)"}${UI.edit===i?";outline:1px solid var(--accent)":""}"><i>${l.d}</i><span class="lt">${esc(l.txt)}</span>${l.tag?`<span class="tag" style="color:${l.tc};border:1px solid ${l.tc}">${l.tag}</span>`:'<span class="tag" style="border:0"></span>'}<span class="la">${UI.edit===null&&UI.ins==null?`<button class="fx" data-a="ins" data-i="${i}" title="Agregar una jugada que faltó antes de esta">+ Antes</button><button class="fx" data-a="edit" data-i="${i}">Editar</button><button class="del ${UI.delAsk===i?"sure":""}" data-a="del" data-i="${i}" aria-label="Borrar jugada">${UI.delAsk===i?"¿Borrar?":"✕"}</button>`:UI.edit===i?'<span class="fx" style="text-decoration:none;color:var(--accent-ink)">editando</span>':UI.ins===i?'<span class="fx" style="text-decoration:none;color:var(--accent-ink)">↑ va antes de esta</span>':""}</span></div>`;};
  const el=document.getElementById("log");if(!el)return;
  if(!PLAYS.length){el.innerHTML='<div class="lab" style="margin-top:0">Última jugada</div><span class="empty">Todavía no hay jugadas.</span>';return;}
  const D=drives();const nO=D.filter(d=>d.side==="o").length,nD=D.length-nO,li=PLAYS.length-1;
@@ -707,6 +719,30 @@ function buildRows(){const off=[],def=[];const SH=SC();const D=drives();const dn
  return {off,def};}
 const csvOf=(hdr,rows)=>[hdr.join(",")].concat(rows.map(r=>r.map(c=>/[",\n]/.test(String(c))?`"${String(c).replace(/"/g,'""')}"`:c).join(","))).join("\n");
 function dl(name,hdr,rows){const b=new Blob([csvOf(hdr,rows)],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`${UI.match.id}-${name}.csv`;document.body.appendChild(a);a.click();a.remove();}
+/* ---------------- borradores en la nube ---------------- */
+let DRAFTS={},DRAFTS_K="";
+const dSeason=m=>m&&m.scout?"SCOUT":season;
+const fmtWhen=iso=>{try{const d=new Date(iso);return d.toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("es-AR",{hour:"2-digit",minute:"2-digit"});}catch(e){return "";}};
+async function draftList(force){const k=gender+"|"+season;if(!force&&DRAFTS_K===k)return;DRAFTS_K=k;
+ try{const j=JSON.parse(await postJSON(uploadUrl(),{kind:"draft",op:"list",gender,season}));if(j&&j.ok){DRAFTS={};(j.drafts||[]).forEach(d=>{DRAFTS[(d.scout?"S|":"F|")+d.matchId]=d;});draw();}}catch(e){}}
+const draftOf=m=>m?DRAFTS[(m.scout?"S|":"F|")+m.id]:null;
+let draftBusy=false;
+async function draftSave(silent,note){const m=UI.match;if(note!=null){const d=draftOf(m)||{};d.note=note;DRAFTS[(m.scout?"S|":"F|")+m.id]=d;}if(!m||!PLAYS.length||draftBusy)return;draftBusy=true;
+ if(!silent)setStatus("Guardando borrador en la nube…","wait");
+ try{const j=JSON.parse(await postJSON(uploadUrl(),{kind:"draft",op:"save",gender,season:dSeason(m),matchId:m.id,scout:!!m.scout,match:m,state:stateObj(),n:PLAYS.length,note:(draftOf(m)&&draftOf(m).note)||""}));
+  if(!j||!j.ok)throw new Error(j&&j.error||"respuesta inválida");
+  DRAFTS[(m.scout?"S|":"F|")+m.id]={matchId:m.id,scout:!!m.scout,n:PLAYS.length,savedAt:j.savedAt,rival:m.rival,note:(draftOf(m)||{}).note||""};UI.draftAt=j.savedAt;
+  if(!silent)setStatus(`☁ Borrador guardado: ${PLAYS.length} jugadas. Lo podés seguir desde otro celular con Partido → Traer borrador.`,"ok");else draw();}
+ catch(e){if(!silent)setStatus("No se guardó el borrador ("+esc(e.name==="AbortError"?"sin respuesta":e.message)+"). Las jugadas siguen en este celular.","err");}
+ finally{draftBusy=false;}}
+async function draftLoad(){const m=UI.match;if(!m)return;setStatus("Trayendo el borrador de la nube…","wait",1);
+ try{const j=JSON.parse(await postJSON(uploadUrl(),{kind:"draft",op:"load",gender,season:dSeason(m),matchId:m.id,scout:!!m.scout}));
+  if(!j||!j.ok)return setStatus(j&&j.error==="no existe"?"No hay borrador en la nube para este partido.":"No pude traer el borrador ("+esc(j&&j.error||"respuesta inválida")+").","err",1);
+  const st=j.draft.state||{};LS.set(matchKey(m),st);UI.draftAsk=false;loadMatch(Object.assign({},m,j.draft.match||{},{id:m.id}));
+  const nt=j.draft.note||"";DRAFTS[(m.scout?"S|":"F|")+m.id]=Object.assign(draftOf(m)||{},{note:nt,n:PLAYS.length,savedAt:j.draft.savedAt});
+  setStatus(`☁ Borrador cargado: ${PLAYS.length} jugadas (guardado ${fmtWhen(j.draft.savedAt)}).${nt?` <b>Nota:</b> ${esc(nt)}`:" Seguí anotando desde acá."}`,"ok",1);}
+ catch(e){setStatus("No pude traer el borrador (¿sin señal?). No se cambió nada.","err",1);}}
+function draftDelete(m){if(!m)return;postJSON(uploadUrl(),{kind:"draft",op:"delete",gender,season:dSeason(m),matchId:m.id,scout:!!m.scout}).catch(()=>{});delete DRAFTS[(m.scout?"S|":"F|")+m.id];}
 function uploadUrl(){try{const c=JSON.parse(localStorage.getItem("fenixPanel.cfg")||"{}");if(c.apiUrl&&/\/exec$/.test(c.apiUrl.trim()))return c.apiUrl.trim();}catch(e){}return CONFIG.UPLOAD_URL;}
 const destinoTxt=()=>`${gender==="f"?"Femenino":"Masculino"} · ${season||"(sin torneo)"}`;
 const UPK=["wait","ok","err"];
@@ -724,7 +760,7 @@ async function finish(){
  let j=null;try{j=JSON.parse(txt);}catch(e){}
  if(!j)return setStatus("No se subió: el Apps Script respondió algo que no es la API (¿URL vieja o permisos?). Las jugadas siguen guardadas en este celular.","err");
  if(!j.ok)return setStatus("No se subió: "+esc(j.error||"error desconocido")+". Las jugadas siguen guardadas en este celular.","err");
- UI.match.uploaded=true;persist();const g=FIXGAMES.find(x=>x.id===UI.match.id);if(g)g.hasData=true;
+ UI.match.uploaded=true;persist();draftDelete(UI.match);const g=FIXGAMES.find(x=>x.id===UI.match.id);if(g)g.hasData=true;
  setStatus(`✓ Subido: ${j.off} filas de ataque y ${j.def} de defensa · Fenix ${G.sc.f} – ${G.sc.r} ${esc(rivalName())}. ${j.score==="ok"?"Marcador guardado en el Fixture.":j.score==="agregado"?"Partido agregado al Fixture con el marcador.":"Marcador no guardado ("+esc(j.score||"—")+")."}`,"ok");}
 
 /* ---------------- eventos ---------------- */
@@ -771,7 +807,8 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="side"){G.side=v;G.spot=5;G.down=1;G.pe=null;J=J0();addAdj({side:v,down:1});}
  if(a==="pe"){G.pe=+v;G.spot=v==="1"?45:40;UI.peAsk=false;addAdj({pe:+v});}
  if(a==="clk"){UI.run=!UI.run;clearInterval(tm);persist();if(UI.run)tm=setInterval(()=>{if(UI.t>0)UI.t--;else{UI.run=false;clearInterval(tm);draw();}document.querySelectorAll(".clkt").forEach(x=>x.textContent=fmt(UI.t));if(!document.activeElement||!document.activeElement.classList.contains("tin")){const tm_=document.querySelector('.tin[data-t="m"]'),ts_=document.querySelector('.tin[data-t="s"]');if(tm_)tm_.value=String(Math.floor(UI.t/60)).padStart(2,"0");if(ts_)ts_.value=String(UI.t%60).padStart(2,"0");}if(UI.t%5===0)persist();},1000);}
- if(a==="canceledit"){G=UI.saved.G;J=UI.saved.J;UI.adj=UI.saved.adj;UI.saved=null;UI.edit=null;}
+ if(a==="canceledit"){G=UI.saved.G;J=UI.saved.J;UI.adj=UI.saved.adj;UI.saved=null;UI.edit=null;UI.ins=null;}
+ if(a==="ins"){const i=+el.dataset.i;if(UI.edit===null&&UI.ins==null)UI.saved={G:clone(G),J:clone(J),adj:UI.adj?clone(UI.adj):null};UI.ins=i;G=clone(PLAYS[i].pre);J=J0();J.tt=PLAYS[i].inp.tt||null;UI.adj=null;draw();window.scrollTo({top:0,behavior:"smooth"});return;}
  if(a==="edit"){const i=+el.dataset.i;if(UI.edit===null)UI.saved={G:clone(G),J:clone(J),adj:UI.adj?clone(UI.adj):null};UI.edit=i;G=clone(PLAYS[i].pre);J=clone(PLAYS[i].inp);UI.adj=null;draw();window.scrollTo({top:0,behavior:"smooth"});return;}
  if(a==="del"){const i=+el.dataset.i;if(UI.delAsk!==i){UI.delAsk=i;draw();return;}UI.delAsk=null;delPlay(i);return;}
  if(a==="clearask")UI.confirmClear=!UI.confirmClear;
@@ -782,7 +819,12 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="impyes"){UI.impAsk=false;importPlays();return;}
  if(a==="impno"){UI.impAsk=false;draw();return;}
  if(a==="finish"){finish().catch(e=>setStatus("No se subió: error en el anotador ("+esc(e&&e.message||e)+"). Las jugadas siguen guardadas en este celular.","err"));return;}
- if(a==="matchpick"){UI.matchOpen=true;draw();window.scrollTo({top:0,behavior:"smooth"});return;}
+ if(a==="dsave"){UI.pmenu=false;UI.noteAsk=true;draw();const t=document.getElementById("dNote");if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length);}return;}
+ if(a==="dsaveok"){const t=document.getElementById("dNote");UI.noteAsk=false;draftSave(false,t?t.value.trim().slice(0,500):"");return;}
+ if(a==="dsaveno"){UI.noteAsk=false;draw();return;}
+ if(a==="dload"){UI.pmenu=false;if(PLAYS.length&&!UI.draftAsk){UI.draftAsk=true;draw();return;}draftLoad();return;}
+ if(a==="dno"){UI.draftAsk=false;draw();return;}
+ if(a==="matchpick"){UI.matchOpen=true;draftList(true);draw();window.scrollTo({top:0,behavior:"smooth"});return;}
  if(a==="matchclose")UI.matchOpen=false;
  if(a==="center")UI.pan=0;
  if(a==="gen"&&v!==gender){gender=v;RAW.set("fenixGender",gender);UI.match=null;boot();return;}
@@ -800,7 +842,7 @@ async function openAmistoso(rv){const am=amistososSeason();
  persist();if(season!==am){season=am;RAW.set("fenixTourn_"+gender,season);UI.match=null;}
  const d=hoy();let id=`AM-${d.id}-${slug(rv)}`,k=2;while(FIXGAMES.some(g=>g.id===id)||pendingCount(id)){id=`AM-${d.id}-${slug(rv)}-${k++}`;}
  loadMatch({id,fecha:d.txt,rival:rv,amistoso:true});UI.matchOpen=false;UI.mmsg="";await loadSeason();}
-async function selectSeason(s){document.activeElement&&document.activeElement.blur&&document.activeElement.blur();season=s;RAW.set("fenixTourn_"+gender,season);UI.match=null;await loadSeason();}
+async function selectSeason(s){document.activeElement&&document.activeElement.blur&&document.activeElement.blur();season=s;RAW.set("fenixTourn_"+gender,season);UI.match=null;await loadSeason();draftList(true);}
 async function loadSeason(){
  FIXGAMES=LS.get(`fenixFix3_${gender}_${season}`,[]);OTHERGAMES=LS.get(`fenixFixO3_${gender}_${season}`,[]);LOGOS=LS.get(`fenixLogos3_${gender}_${season}`,{});ROSTER=LS.get(`fenixRoster3_${gender}_${season}`,[]);setRoster();
  const cur=LS.get("fenixAnot3_cur_"+gender,null);if(!UI.match&&cur&&cur.season===season&&cur.match)loadMatch(cur.match);
@@ -810,7 +852,7 @@ async function loadSeason(){
  if(!SC())J.pas=J.pas||UI.lastPas||QBS[0]||null;safeDraw();}
 async function boot(){
  LOADING=true;draw();await loadIndex();const ss=seasonsForGender();const saved=RAW.get("fenixTourn_"+gender,"");
- season=ss.includes(saved)?saved:(ss.find(x=>!/amistos/i.test(x))||ss[0]||"");await loadSeason();}
+ season=ss.includes(saved)?saved:(ss.find(x=>!/amistos/i.test(x))||ss[0]||"");await loadSeason();draftList(true);}
 window.addEventListener("pagehide",persist);
 boot();
 
