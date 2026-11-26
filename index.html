@@ -231,7 +231,7 @@ document.addEventListener('focusout',()=>{if(pendingDraw)setTimeout(safeDraw,50)
 const UI={pmode:"sheet",sb:"tv",pick:null,match:null,matchOpen:false,delAsk:null,confirmClear:false,status:"",statusKind:"",per:"1T",dur:20*60,clkEdit:false,peAsk:false,ori:"v",vista:"adelante",t:20*60,run:false,mover:false,edit:null,saved:null,adj:null,pmenu:false,vmenu:false,pan:0,impAsk:false,sv:"banda",perAsk:null,dots:"num",abIco:true,hash:true,lastTipo:"pase",mmode:"fenix",mmsg:"",showAll:false,lastPas:null,lastRec:null,lastCor:null};
 let FREQ={};
 const G0=()=>({side:"o",spot:5,down:1,pe:null,sc:{f:0,r:0},n:0});
-const J0=()=>({mc:false,fxn:0,yd:null,tipo:UI.lastTipo||"pase",pas:SC()?null:(UI.lastPas||(QBS[0]||null)),cor:SC()?null:(UI.lastCor||null),rec:SC()?null:(UI.lastRec||null),rfl:null,rfe:[],dsv:null,dsvR:false,res:(UI.lastTipo||"pase")==="pase"?"C":null,pt:null,fin:null,def:null,fe:[],am:0,ret:null,pick:false,pf:false,facc:null,fq:null,fj:null,ft:null,fy:null,fd:null,fsp:null,tt:null});
+const J0=()=>({mc:false,fxn:0,fc:false,flg:null,yd:null,tipo:UI.lastTipo||"pase",pas:SC()?null:(UI.lastPas||(QBS[0]||null)),cor:SC()?null:(UI.lastCor||null),rec:SC()?null:(UI.lastRec||null),rfl:null,rfe:[],dsv:null,dsvR:false,res:(UI.lastTipo||"pase")==="pase"?"C":null,pt:null,fin:null,def:null,fe:[],am:0,ret:null,pick:false,pf:false,facc:null,fq:null,fj:null,ft:null,fy:null,fd:null,fsp:null,tt:null});
 let G=G0(),J=J0(),PLAYS=[];
 const yLbl=y=>y<0||y>50?"zona":String(y<=25?Math.round(y):Math.round(50-y));
 const yLblSpot=s=>(s<=25?"propia ":"rival ")+(s<=25?s:50-s);
@@ -263,16 +263,17 @@ function yline(yd,st){const[a,b]=[P(0,yd),P(25,yd)];return `<line x1="${a[0]}" y
 const fxList=j=>{const o=[];for(let i=0;i<(j.fxn||0);i++)if(j["fxq"+i])o.push({q:j["fxq"+i],j:j["fxj"+i]||"",t:j["fxt"+i]||""});return o;};
 const compA=j=>j.fq==="A"||(!!j.fq&&fxList(j).some(x=>x.q!==j.fq));
 const anulada=j=>j.pf&&(j.facc==="falta"||compA(j));
-function endYd(j,g){if(j.yd!=null&&((j.tipo==="pase"&&j.res==="C")||j.tipo==="corr"||j.tipo==="sack"))return g.spot+j.yd;if(j.tipo==="pase"){if(j.res!=="C")return g.spot;const p=j.fin||j.pt;return p?p[1]:null;}if(j.tipo==="corr"||j.tipo==="sack"){const f=j.fin||(j.tipo==="corr"?j.pt:null);return f?f[1]:null;}return null;}
+const dsvC=j=>j.tipo==="pase"&&j.res==="F"&&!!j.fc;
+function endYd(j,g){if(j.yd!=null&&((j.tipo==="pase"&&(j.res==="C"||dsvC(j)))||j.tipo==="corr"||j.tipo==="sack"))return g.spot+j.yd;if(j.tipo==="pase"){if(j.res!=="C"&&!dsvC(j))return g.spot;const p=j.fin||(j.res==="C"?j.pt:null);return p?p[1]:(j.res==="C"?null:g.spot);}if(j.tipo==="corr"||j.tipo==="sack"){const f=j.fin||(j.tipo==="corr"?j.pt:null);return f?f[1]:null;}return null;}
 function gain(j,g){const e=endYd(j,g);return e==null?null:Math.round(e-g.spot);}
-function isTD(j,g){if(j.tipo==="sack")return false;if(j.tipo==="pase"&&j.res!=="C")return false;const e=endYd(j,g);return e!=null&&e>=50;}
+function isTD(j,g){if(j.tipo==="sack")return false;if(j.tipo==="pase"&&j.res!=="C"&&!dsvC(j))return false;const e=endYd(j,g);return e!=null&&e>=50;}
 const isPick=j=>j.tipo==="pase"&&j.res==="X"&&(j.pick||(j.ret&&j.ret[1]<0));
 function faltaSpot(j,g){if(compA(j))return g.spot;const sgn=(j.fq==="F")===(g.side==="o")?-1:1;let ns;if(j.fy==="spot"&&j.fsp)ns=Math.round(j.fsp[1]);else{ns=g.spot+sgn*(+j.fy||0);if(ns<1)ns=Math.max(1,Math.round(g.spot/2));}return Math.min(49,Math.max(1,ns));}
 function need(){
  if(UI.mover)return "spot";
  if(J.tipo==="pase"&&!J.pt&&J.yd==null)return "pt";
  if((J.tipo==="falta"||J.pf)&&J.fy==="spot"&&!J.fsp)return "fsp";
- if(J.tipo==="pase"&&J.res==="C"&&!J.fin&&J.yd==null)return "fin";
+ if(J.tipo==="pase"&&(J.res==="C"||dsvC(J))&&!J.fin&&J.yd==null)return "fin";
  if(J.tipo==="pase"&&J.res==="X"&&!J.ret&&!J.pick)return "ret";
  if(J.tipo==="corr"&&!J.pt&&!J.fin&&J.yd==null)return "pt";
  if(J.tipo==="corr"&&J.pt&&!J.fin&&J.yd==null)return "fin";
@@ -333,9 +334,9 @@ function apply(g,j){
    rfe.forEach(n=>def.push(mini({"flag errado":n})));}};
  const buildDef=()=>{const r=Object.assign({},base);if(pe)r.situacion="PE";
   if(!an){
-   if(j.tipo==="pase"){if(j.res==="C"&&!td&&j.def)r["flag capturado"]=j.def;if(j.res==="F"||(sc&&j.res==="I"&&j.def))r["pase desviado"]=j.def;
+   if(j.tipo==="pase"){if(j.res==="C"&&!td&&j.def)r["flag capturado"]=j.def;if(j.res==="F"||(sc&&j.res==="I"&&j.def))r["pase desviado"]=j.def;if(j.res==="F"&&j.flg&&!td)r["flag capturado"]=j.flg;
     if(j.res==="X"){r.intercepcion=j.def;if(j.am)r.amagues=j.am;if(j.ret&&j.pt)r["yd intercep"]=Math.max(0,Math.round(j.pt[1]-j.ret[1]));if(pk)r[pe?"pick 2":"pick 6"]=j.def;}
-    r["yd rival"]=j.res==="C"?(gn??""):0;}
+    r["yd rival"]=j.res==="C"||dsvC(j)?(gn??""):0;}
    if(j.tipo==="corr"){if(!td&&j.def)r["flag capturado"]=j.def;r["yd rival"]=gn??"";}
    if(j.tipo==="sack"){r.sacks=j.def;r["yd rival"]=gn??"";}
    if(j.ret)r["devolucion x,y"]=j.ret.join(",");
@@ -344,7 +345,7 @@ function apply(g,j){
   if(an)r["jugada anulada"]=j.tipo;
   def.push(r);
   if(!an&&j.tipo==="pase"&&j.res==="X"&&j.dsv)def.push({Partido:base.Partido,jugada:g.n,tiempo:base.tiempo,down:base.down,spot:base.spot,penales:pen,situacion:pe?"PE":"","pase desviado":j.dsv});
-  if(!an&&(j.tipo==="corr"||(j.tipo==="pase"&&j.res==="C")))(j.fe||[]).forEach(n=>def.push({Partido:base.Partido,jugada:g.n,tiempo:base.tiempo,down:base.down,spot:base.spot,penales:pen,situacion:pe?"PE":"","flag errado":n}));};
+  if(!an&&(j.tipo==="corr"||(j.tipo==="pase"&&(j.res==="C"||j.res==="F"))))(j.fe||[]).forEach(n=>def.push({Partido:base.Partido,jugada:g.n,tiempo:base.tiempo,down:base.down,spot:base.spot,penales:pen,situacion:pe?"PE":"","flag errado":n}));};
  if(sc){const A=scA(),B=scB(),atk=o?A:B,dfn=o?B:A;buildDef();const nd=def.length;buildOff();
   off.forEach(r=>r.equipo=atk);if(td&&!an&&off[0])off[0].puntos=pe?g.pe:6;def.forEach((r,i)=>r.equipo=i<nd?dfn:atk);
   [off[0],def[0]].forEach(r=>{if(r){delete r["falta jugador"];delete r["falta recibida"];delete r["faltas realizadas"];delete r["faltas recibidas"];}});
@@ -356,7 +357,7 @@ function apply(g,j){
    else def.push(Object.assign(fmini(x),x.q==="F"?{"faltas realizadas":x.j}:{"faltas recibidas":x.j}));});}
  // texto del listado
  const nmF=sc?scA():"Fenix",nmR=sc?scB():"rival",atkNm=o?scA():scB();
- let txt=j.tipo==="pase"?(j.res==="C"?(o||sc?(j.pas||j.rec?`#${j.pas||"?"} → #${j.rec||"?"}`:"Pase "+(sc?atkNm:"")):"Pase rival")+(gn==null?" completo":` ${gn} yd`):j.res==="X"?`Intercepción${(!o||sc)&&j.def?" #"+j.def:""}${j.dsv?" (desvío #"+j.dsv+")":j.dsvR?" (con desvío)":""}`:j.res==="D"?`Drop #${j.rec}`:j.res==="F"?`Desvío #${j.def}`:"Incompleto"):j.tipo==="falta"?(j.fq==="A"?"Faltas de ambos":`Falta ${j.fq==="F"?nmF+(j.fj?" #"+j.fj:""):nmR+(sc&&j.fj?" #"+j.fj:"")}${j.ft?" · "+j.ft:""}${fxList(j).length?" + "+fxList(j).length+" más"+(compA(j)?" (compensadas)":""):""}`):j.tipo==="corr"?`Corrida ${o||sc?(j.cor?"#"+j.cor:atkNm):"rival"}${gn==null?"":" "+gn+" yd"}`:`Sack${(o||sc)&&j.pas?" a #"+j.pas:(!o||sc)&&j.def?" por #"+j.def:""}${gn==null?"":" "+gn+" yd"}`;
+ let txt=j.tipo==="pase"?(j.res==="C"?(o||sc?(j.pas||j.rec?`#${j.pas||"?"} → #${j.rec||"?"}`:"Pase "+(sc?atkNm:"")):"Pase rival")+(gn==null?" completo":` ${gn} yd`):j.res==="X"?`Intercepción${(!o||sc)&&j.def?" #"+j.def:""}${j.dsv?" (desvío #"+j.dsv+")":j.dsvR?" (con desvío)":""}`:j.res==="D"?`Drop #${j.rec}`:j.res==="F"?`Desvío #${j.def}`+(dsvC(j)?` · siguió${gn==null?"":" "+gn+" yd"}`:"")+(j.flg&&!td?` · flag #${j.flg}`:""):"Incompleto"):j.tipo==="falta"?(j.fq==="A"?"Faltas de ambos":`Falta ${j.fq==="F"?nmF+(j.fj?" #"+j.fj:""):nmR+(sc&&j.fj?" #"+j.fj:"")}${j.ft?" · "+j.ft:""}${fxList(j).length?" + "+fxList(j).length+" más"+(compA(j)?" (compensadas)":""):""}`):j.tipo==="corr"?`Corrida ${o||sc?(j.cor?"#"+j.cor:atkNm):"rival"}${gn==null?"":" "+gn+" yd"}`:`Sack${(o||sc)&&j.pas?" a #"+j.pas:(!o||sc)&&j.def?" por #"+j.def:""}${gn==null?"":" "+gn+" yd"}`;
  if((!o||sc)&&!an&&!td&&j.def&&(j.tipo==="corr"||(j.tipo==="pase"&&j.res==="C")))txt=`Flag #${j.def} · ${j.tipo==="corr"?"corrida":"pase"}${gn==null?"":" "+gn+" yd"}`;
  if(j.pf)txt+=compA(j)?" + faltas de ambos":` + falta ${j.fq==="F"?nmF:nmR}${an?" (aceptada)":" (declinada)"}`;
  const rfl2=j.rfl!=null?j.rfl:(sc?null:j.def),rfe2=j.rfe&&j.rfe.length?j.rfe:(sc?[]:(j.fe||[]));
@@ -434,7 +435,8 @@ async function importPlays(){const m=UI.match;if(!m)return;const sc=!!m.scout,si
    inp.rec=(ps?(v(O,"receptor")||v(O,"drop")||v(O,"jugador pe fallado")||v(O,"jugador p ext")):"")||null;
    inp.cor=(cr?(v(O,"corredor")||v(O,"jugador p ext")||v(O,"jugador pe fallado")):"")||null;
    inp.am=+v(O,"amagues")||0;if(v(O,"pick 6 rival")||v(O,"pick 2 rival"))inp.pick=true;if(v(O,"desvio")==="si")inp.dsvR=true;}
-  if(D){inp.def=v(D,"flag capturado")||v(D,"pase desviado")||v(D,"intercepcion")||v(D,"sacks")||null;if(!O)inp.am=+v(D,"amagues")||0;if(v(D,"pick 6")||v(D,"pick 2"))inp.pick=true;}
+  if(D){inp.def=v(D,"flag capturado")||v(D,"pase desviado")||v(D,"intercepcion")||v(D,"sacks")||null;
+   if(tipo==="pase"&&v(D,"resultado")==="F"){inp.res="F";inp.def=v(D,"pase desviado")||null;inp.flg=v(D,"flag capturado")||null;inp.fc=(num(v(D,"yd rival"))||0)!==0||!!v(D,"fin x,y")||!!v(D,"td rival");}if(!O)inp.am=+v(D,"amagues")||0;if(v(D,"pick 6")||v(D,"pick 2"))inp.pick=true;}
   const atkTeam=sc?v(O,"equipo"):null;
   x.mini.forEach(mn=>{const fc=v(mn,"flag capturado"),fe=v(mn,"flag errado"),ds=v(mn,"pase desviado");
    const isAtk=sc?nkey(v(mn,"equipo"))===nkey(atkTeam):side==="o";
@@ -587,6 +589,8 @@ function sheet(){
    if(sc){if(J.res==="I")h+=NUMS("Quién desvió (opcional)","def",DL,true,DT);if(J.res==="X"){h+=NUMS("Quién interceptó (opcional)","def",DL,true,DT);h+=amg("Amagues en la devolución");}if(J.res==="C")h+=flagsDef({list:DL,team:DT,capt:!isTD(J,G)});}}
   else{
    if(J.res==="F"||J.res==="X")h+=NUMS(J.res==="F"?"Quién desvió":"Quién interceptó","def",MIO,true);
+   if(J.res==="F"){h+=`<div class="row" style="margin-top:8px"><button class="btn ${J.fc?"on":""}" data-a="fctog">${J.fc?"✓ ":""}La agarró el rival y siguió</button></div>`;
+    if(J.fc)h+=ydc();h+=flagsDef({k1:"flg",capt:!isTD(J,G)});}
    if(J.res==="X")h+=amg("Amagues en la devolución");
    if(J.res==="C")h+=ydc();
    if(J.res==="C")h+=flagsDef({capt:!isTD(J,G)});}
@@ -604,7 +608,7 @@ function sheet(){
   else h+=`<div class="pfbox"><div class="row" style="justify-content:space-between;align-items:center"><span class="lab" style="width:auto;color:#FACC15">Falta en la jugada</span><button class="fx" data-a="pf">Quitar</button></div>${faltaForm()}${!compA(J)?`<div class="lab">¿Qué se acepta?</div><div class="row"><button class="btn ${J.facc==="falta"?"on":""}" data-a="set" data-k="facc" data-v="falta">La falta</button><button class="btn ${J.facc==="jugada"?"on":""}" data-a="set" data-k="facc" data-v="jugada">La jugada</button></div>`:""}</div>`;}
  if(listo()){const g=gain(J,G),an=anulada(J);let t="";
   if(J.tipo==="pase"){const air=J.pt?Math.round(J.pt[1]-G.spot):null;let who=o?"#"+J.pas+" → #"+J.rec:"rival";
-   if(sc)who=J.pas||J.rec?"#"+(J.pas||"?")+" → #"+(J.rec||"?"):atkName();t=J.res==="C"?(g==null?`Pase ${who} completo · <span style="color:#FACC15">sin ubicación (se completa después)</span>`:(air!=null&&J.yd==null?`Pase ${who}: <b>${air}</b> yd en el aire${g-air?` + <b>${g-air}</b> después`:""} = <b>${g}</b> yd`:`Pase ${who}: <b>${g}</b> yd${J.yd!=null?" (a mano)":""}`)):J.res==="X"?"Intercepción":J.res==="D"?`Drop de #${J.rec}`:J.res==="F"?"Pase desviado":"Pase incompleto";
+   if(sc)who=J.pas||J.rec?"#"+(J.pas||"?")+" → #"+(J.rec||"?"):atkName();t=J.res==="C"?(g==null?`Pase ${who} completo · <span style="color:#FACC15">sin ubicación (se completa después)</span>`:(air!=null&&J.yd==null?`Pase ${who}: <b>${air}</b> yd en el aire${g-air?` + <b>${g-air}</b> después`:""} = <b>${g}</b> yd`:`Pase ${who}: <b>${g}</b> yd${J.yd!=null?" (a mano)":""}`)):J.res==="X"?"Intercepción":J.res==="D"?`Drop de #${J.rec}`:J.res==="F"?(dsvC(J)?`Pase desviado que agarró el rival${g==null?"":`: <b>${g}</b> yd`}${J.flg&&!isTD(J,G)?` · flag #${J.flg}`:""}`:"Pase desviado"):"Pase incompleto";
    if(J.res==="C"&&J.am)t+=` · ${J.am} amague${J.am>1?"s":""}`;}
   if(J.tipo==="corr")t=g==null?`Corrida ${o?"#"+J.cor:"rival"} · <span style="color:#FACC15">sin ubicación</span>`:`Corrida ${o?"#"+J.cor:"rival"}: <b>${g}</b> yd${J.am?` · ${J.am} amague${J.am>1?"s":""}`:""}`;
   if(J.tipo==="sack")t=J.mc?"Mal centro · pierde el down":g==null?"Sack · sin ubicación":`Sack: <b>${g}</b> yd`;
@@ -742,6 +746,7 @@ document.getElementById("app").onclick=e=>{const el=e.target.closest("[data-a]")
  if(a==="mc"){J.mc=!!v;if(J.mc){J.fin=null;J.yd=null;}draw();return;}
  if(a==="fxadd"){const i=J.fxn||0;J["fxq"+i]=J.fq==="F"?"F":"R";J["fxj"+i]=null;J["fxt"+i]=null;J.fxn=i+1;draw();return;}
  if(a==="fxdel"){const n=J.fxn||0,i=+v;for(let k=i;k<n-1;k++){["fxq","fxj","fxt"].forEach(f=>J[f+k]=J[f+(k+1)]);}["fxq","fxj","fxt"].forEach(f=>delete J[f+(n-1)]);J.fxn=n-1;draw();return;}
+ if(a==="fctog"){J.fc=!J.fc;if(!J.fc){J.fin=null;J.yd=null;}draw();return;}
  if(a==="pickclear"){J[el.dataset.k]=[];draw();return;}
  if(a==="pickset"){J[el.dataset.k]=v||null;UI.pick=null;draw();return;}
  if(a==="set"){const k=el.dataset.k;J[k]=J[k]===v&&!["res","fq","facc","fy","fd"].includes(k)&&!/^fxq/.test(k)?null:v;if(/^fxq/.test(k))J["fxj"+k.slice(3)]=null;if(k==="res"&&v!=="C")J.fin=null;if(k==="res"){J.def=null;J.pick=false;J.ret=null;}if(k==="fq")J.fj=null;if(k==="fy")J.fsp=null;}
